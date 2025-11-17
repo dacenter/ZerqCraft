@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ZerqCraft Gaming Hub - Игровой Центр</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Main Menu -->
+    <div id="main-menu" class="screen active">
+        <div class="logo-container">
+            <h1 class="main-title">🎮 ZERQCRAFT 🎮</h1>
+            <p class="subtitle">ИГРОВОЙ ЦЕНТР</p>
+        </div>
+
+        <div class="games-grid">
+            <div class="game-card" data-game="fruit-slash" style="--card-color: #ff6b6b">
+                <div class="game-icon">🍎</div>
+                <h3>Fruit Slash</h3>
+                <p>Рубим фрукты!</p>
+                <div class="players">1-4 игрока</div>
+            </div>
+
+            <div class="game-card" data-game="air-hockey" style="--card-color: #4ecdc4">
+                <div class="game-icon">🏒</div>
+                <h3>Air Hockey</h3>
+                <p>Воздушный хоккей</p>
+                <div class="players">2 игрока</div>
+            </div>
+
+            <div class="game-card" data-game="color-splash" style="--card-color: #95e1d3">
+                <div class="game-icon">🎨</div>
+                <h3>Color Splash</h3>
+                <p>Смешиваем краски</p>
+                <div class="players">1-6 игроков</div>
+            </div>
+
+            <div class="game-card" data-game="piano-hero" style="--card-color: #f38181">
+                <div class="game-icon">🎹</div>
+                <h3>Piano Hero</h3>
+                <p>Музыкальные плитки</p>
+                <div class="players">1-2 игрока</div>
+            </div>
+
+            <div class="game-card" data-game="memory-match" style="--card-color: #aa96da">
+                <div class="game-icon">🧩</div>
+                <h3>Memory Match</h3>
+                <p>Найди пару</p>
+                <div class="players">1-4 игрока</div>
+            </div>
+
+            <div class="game-card" data-game="whack-a-mole" style="--card-color: #fcbad3">
+                <div class="game-icon">🔨</div>
+                <h3>Whack-a-Mole</h3>
+                <p>Ударь крота</p>
+                <div class="players">1-4 игрока</div>
+            </div>
+
+            <div class="game-card" data-game="bubble-pop" style="--card-color: #a8d8ea">
+                <div class="game-icon">🫧</div>
+                <h3>Bubble Pop</h3>
+                <p>Лопай пузыри</p>
+                <div class="players">1-6 игроков</div>
+            </div>
+
+            <div class="game-card" data-game="space-defender" style="--card-color: #ffaaa5">
+                <div class="game-icon">🚀</div>
+                <h3>Space Defender</h3>
+                <p>Защити планету</p>
+                <div class="players">1-4 игрока</div>
+            </div>
+        </div>
+
+        <div class="menu-footer">
+            <button class="btn-settings">⚙️ Настройки</button>
+            <button class="btn-leaderboard">🏆 Рекорды</button>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div id="game-container" class="screen">
+        <div class="game-header">
+            <button class="btn-back">← Назад</button>
+            <h2 id="game-title"></h2>
+            <div class="score-display">
+                <span id="score">0</span>
+            </div>
+        </div>
+        <canvas id="game-canvas"></canvas>
+        <div id="game-ui"></div>
+    </div>
+
+    <!-- Leaderboard Screen -->
+    <div id="leaderboard-screen" class="screen">
+        <div class="leaderboard-container">
+            <h2>🏆 ТАБЛИЦА РЕКОРДОВ 🏆</h2>
+            <div id="leaderboard-content"></div>
+            <button class="btn-back-menu">← В меню</button>
+        </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen">
+        <div class="settings-container">
+            <h2>⚙️ НАСТРОЙКИ</h2>
+            <div class="setting-item">
+                <label>Звук</label>
+                <input type="range" id="volume-slider" min="0" max="100" value="70">
+            </div>
+            <div class="setting-item">
+                <label>Музыка</label>
+                <input type="range" id="music-slider" min="0" max="100" value="50">
+            </div>
+            <div class="setting-item">
+                <label>Вибрация</label>
+                <input type="checkbox" id="vibration-toggle" checked>
+            </div>
+            <button class="btn-back-menu">← В меню</button>
+        </div>
+    </div>
+
+    <!-- Particle Effects Container -->
+    <div id="particles"></div>
+
+    <!-- Scripts -->
+    <script src="js/utils/touch-handler.js"></script>
+    <script src="js/utils/score-manager.js"></script>
+    <script src="js/utils/particle-system.js"></script>
+    <script src="js/games/fruit-slash.js"></script>
+    <script src="js/games/air-hockey.js"></script>
+    <script src="js/games/color-splash.js"></script>
+    <script src="js/games/piano-hero.js"></script>
+    <script src="js/games/memory-match.js"></script>
+    <script src="js/games/whack-a-mole.js"></script>
+    <script src="js/games/bubble-pop.js"></script>
+    <script src="js/games/space-defender.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
