@@ -1,0 +1,40 @@
+{
+  "name": "fruit-slash",
+  "version": "1.0.0",
+  "description": "Fruit Slash - Touch Screen Game",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:win32": "electron-builder --win --ia32",
+    "build:win64": "electron-builder --win --x64"
+  },
+  "author": "ZerqCraft",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "build": {
+    "appId": "com.zerqcraft.fruitslash",
+    "productName": "Fruit Slash",
+    "directories": {
+      "output": "../../builds"
+    },
+    "win": {
+      "target": ["nsis"],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "files": [
+      "**/*",
+      "!node_modules/**/*"
+    ]
+  }
+}

@@ -1,0 +1,216 @@
+{
+  "version": "1.0.0",
+  "games": [
+    {
+      "id": "fruit-slash",
+      "name": "Fruit Slash",
+      "nameRu": "Фруктовый Ниндзя",
+      "icon": "icons/fruit-slash.png",
+      "executable": "builds/Fruit Slash.exe",
+      "description": "Slice flying fruits with your fingers! Avoid bombs and build combos.",
+      "descriptionRu": "Рубите летающие фрукты пальцами! Избегайте бомб и набирайте комбо.",
+      "players": {
+        "min": 1,
+        "max": 4,
+        "recommended": 2
+      },
+      "genre": "Arcade",
+      "engine": "Electron",
+      "difficulty": "Easy",
+      "duration": "5-10 min",
+      "tags": ["action", "casual", "multitouch"],
+      "thumbnail": "thumbnails/fruit-slash.jpg",
+      "screenshots": [
+        "screenshots/fruit-slash-1.jpg",
+        "screenshots/fruit-slash-2.jpg"
+      ]
+    },
+    {
+      "id": "air-hockey",
+      "name": "Air Hockey",
+      "nameRu": "Воздушный Хоккей",
+      "icon": "icons/air-hockey.png",
+      "executable": "builds/Air Hockey.exe",
+      "description": "Classic air hockey for two players. First to 7 wins!",
+      "descriptionRu": "Классический воздушный хоккей для двух игроков. Первый до 7 побеждает!",
+      "players": {
+        "min": 2,
+        "max": 2,
+        "recommended": 2
+      },
+      "genre": "Sport",
+      "engine": "Unity",
+      "difficulty": "Medium",
+      "duration": "5-10 min",
+      "tags": ["competitive", "2-player", "physics"],
+      "thumbnail": "thumbnails/air-hockey.jpg",
+      "screenshots": [
+        "screenshots/air-hockey-1.jpg",
+        "screenshots/air-hockey-2.jpg"
+      ]
+    },
+    {
+      "id": "color-splash",
+      "name": "Color Splash",
+      "nameRu": "Цветные Краски",
+      "icon": "icons/color-splash.png",
+      "executable": "builds/Color Splash.exe",
+      "description": "Free painting with colors. Mix paints and create masterpieces!",
+      "descriptionRu": "Свободное рисование красками. Смешивайте цвета и создавайте шедевры!",
+      "players": {
+        "min": 1,
+        "max": 6,
+        "recommended": 3
+      },
+      "genre": "Creative",
+      "engine": "Electron",
+      "difficulty": "Easy",
+      "duration": "Unlimited",
+      "tags": ["creative", "relaxing", "kids"],
+      "thumbnail": "thumbnails/color-splash.jpg",
+      "screenshots": [
+        "screenshots/color-splash-1.jpg",
+        "screenshots/color-splash-2.jpg"
+      ]
+    },
+    {
+      "id": "piano-hero",
+      "name": "Piano Hero",
+      "nameRu": "Пиано Герой",
+      "icon": "icons/piano-hero.png",
+      "executable": "builds/Piano Hero.exe",
+      "description": "Tap falling tiles in rhythm! Accuracy and combo system.",
+      "descriptionRu": "Нажимайте на падающие плитки в ритм! Система точности и комбо.",
+      "players": {
+        "min": 1,
+        "max": 2,
+        "recommended": 1
+      },
+      "genre": "Music",
+      "engine": "Electron",
+      "difficulty": "Medium",
+      "duration": "3-5 min",
+      "tags": ["rhythm", "music", "skill"],
+      "thumbnail": "thumbnails/piano-hero.jpg",
+      "screenshots": [
+        "screenshots/piano-hero-1.jpg",
+        "screenshots/piano-hero-2.jpg"
+      ]
+    },
+    {
+      "id": "memory-match",
+      "name": "Memory Match",
+      "nameRu": "Найди Пару",
+      "icon": "icons/memory-match.png",
+      "executable": "builds/Memory Match.exe",
+      "description": "Find all matching card pairs. Train your memory!",
+      "descriptionRu": "Найдите все пары карточек. Тренируйте память!",
+      "players": {
+        "min": 1,
+        "max": 4,
+        "recommended": 2
+      },
+      "genre": "Puzzle",
+      "engine": "Unity",
+      "difficulty": "Easy",
+      "duration": "5-10 min",
+      "tags": ["puzzle", "memory", "kids"],
+      "thumbnail": "thumbnails/memory-match.jpg",
+      "screenshots": [
+        "screenshots/memory-match-1.jpg",
+        "screenshots/memory-match-2.jpg"
+      ]
+    },
+    {
+      "id": "whack-a-mole",
+      "name": "Whack-a-Mole",
+      "nameRu": "Ударь Крота",
+      "icon": "icons/whack-a-mole.png",
+      "executable": "builds/Whack-a-Mole.exe",
+      "description": "Hit all moles in 60 seconds! Golden moles worth more.",
+      "descriptionRu": "Успейте ударить всех кротов за 60 секунд! Золотые дают больше очков.",
+      "players": {
+        "min": 1,
+        "max": 4,
+        "recommended": 2
+      },
+      "genre": "Reaction",
+      "engine": "Unity",
+      "difficulty": "Easy",
+      "duration": "1 min",
+      "tags": ["action", "reflex", "cooperative"],
+      "thumbnail": "thumbnails/whack-a-mole.jpg",
+      "screenshots": [
+        "screenshots/whack-a-mole-1.jpg",
+        "screenshots/whack-a-mole-2.jpg"
+      ]
+    },
+    {
+      "id": "bubble-pop",
+      "name": "Bubble Pop",
+      "nameRu": "Лопай Пузыри",
+      "icon": "icons/bubble-pop.png",
+      "executable": "builds/Bubble Pop.exe",
+      "description": "Pop colorful bubbles! More in a row means bigger combos.",
+      "descriptionRu": "Лопайте цветные пузыри! Чем больше подряд - тем больше комбо.",
+      "players": {
+        "min": 1,
+        "max": 6,
+        "recommended": 2
+      },
+      "genre": "Casual",
+      "engine": "Electron",
+      "difficulty": "Easy",
+      "duration": "Unlimited",
+      "tags": ["casual", "relaxing", "endless"],
+      "thumbnail": "thumbnails/bubble-pop.jpg",
+      "screenshots": [
+        "screenshots/bubble-pop-1.jpg",
+        "screenshots/bubble-pop-2.jpg"
+      ]
+    },
+    {
+      "id": "space-defender",
+      "name": "Space Defender",
+      "nameRu": "Защитник Космоса",
+      "icon": "icons/space-defender.png",
+      "executable": "builds/Space Defender.exe",
+      "description": "Defend the planet from space invaders! Cooperative mode.",
+      "descriptionRu": "Защищайте планету от космических захватчиков! Кооперативный режим.",
+      "players": {
+        "min": 1,
+        "max": 4,
+        "recommended": 3
+      },
+      "genre": "Shooter",
+      "engine": "Unity",
+      "difficulty": "Hard",
+      "duration": "5-15 min",
+      "tags": ["shooter", "cooperative", "action"],
+      "thumbnail": "thumbnails/space-defender.jpg",
+      "screenshots": [
+        "screenshots/space-defender-1.jpg",
+        "screenshots/space-defender-2.jpg"
+      ]
+    }
+  ],
+  "categories": {
+    "action": ["fruit-slash", "space-defender", "whack-a-mole"],
+    "casual": ["bubble-pop", "color-splash"],
+    "competitive": ["air-hockey"],
+    "cooperative": ["space-defender", "whack-a-mole"],
+    "kids": ["color-splash", "bubble-pop", "memory-match"],
+    "skill": ["piano-hero", "fruit-slash"]
+  },
+  "launcher": {
+    "title": "ZerqCraft Gaming Hub",
+    "version": "1.0.0",
+    "backgroundColor": "#667eea",
+    "accentColor": "#764ba2",
+    "defaultSort": "name",
+    "enableGamepad": false,
+    "enableKeyboard": true,
+    "fullscreen": true,
+    "exitKey": "Escape"
+  }
+}
