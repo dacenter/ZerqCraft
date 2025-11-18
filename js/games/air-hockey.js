@@ -47,6 +47,7 @@ class AirHockey {
         this.bounceDamping = 0.9;
         this.gameTime = 60; // 60 seconds game time
         this.timerInterval = null;
+        this.goalScored = false; // Prevent multiple goal counts
 
         this.animationFrame = null;
 
@@ -135,6 +136,9 @@ class AirHockey {
         const speed = 8;
         this.puck.vx = Math.cos(angle) * speed;
         this.puck.vy = Math.sin(angle) * speed;
+
+        // Reset goal scored flag
+        this.goalScored = false;
     }
 
     clamp(value, min, max) {
@@ -172,20 +176,22 @@ class AirHockey {
         const goalRight = goalCenter + this.goalWidth / 2;
 
         if (this.puck.y - this.puck.radius < 0) {
-            if (this.puck.x > goalLeft && this.puck.x < goalRight) {
+            if (this.puck.x > goalLeft && this.puck.x < goalRight && !this.goalScored) {
                 // Goal for player 1!
+                this.goalScored = true;
                 this.score('player1');
-            } else {
+            } else if (this.puck.x < goalLeft || this.puck.x > goalRight) {
                 this.puck.vy *= -this.bounceDamping;
                 this.puck.y = this.puck.radius;
             }
         }
 
         if (this.puck.y + this.puck.radius > this.canvas.height) {
-            if (this.puck.x > goalLeft && this.puck.x < goalRight) {
+            if (this.puck.x > goalLeft && this.puck.x < goalRight && !this.goalScored) {
                 // Goal for player 2!
+                this.goalScored = true;
                 this.score('player2');
-            } else {
+            } else if (this.puck.x < goalLeft || this.puck.x > goalRight) {
                 this.puck.vy *= -this.bounceDamping;
                 this.puck.y = this.canvas.height - this.puck.radius;
             }

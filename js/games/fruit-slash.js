@@ -81,15 +81,15 @@ class FruitSlash {
         const fruit = {
             x: Math.random() * this.canvas.width,
             y: this.canvas.height + 50,
-            vx: (Math.random() - 0.5) * 5, // Slower horizontal movement
-            vy: -(Math.random() * 8 + 12), // Slower upward velocity
+            vx: (Math.random() - 0.5) * 6, // Horizontal movement
+            vy: -(Math.random() * 10 + 18), // Higher upward velocity (18-28)
             radius: 60, // Bigger fruits
             emoji: isBomb ? this.bombEmoji : this.fruitTypes[Math.floor(Math.random() * this.fruitTypes.length)],
             rotation: Math.random() * Math.PI * 2,
             rotationSpeed: (Math.random() - 0.5) * 0.15, // Slower rotation
             isBomb: isBomb,
             sliced: false,
-            gravity: 0.4 // Less gravity for slower fall
+            gravity: 0.5 // Gravity for natural arc
         };
 
         this.fruits.push(fruit);
@@ -179,10 +179,15 @@ class FruitSlash {
             fruit.y += fruit.vy;
             fruit.rotation += fruit.rotationSpeed;
 
-            // Remove if off screen
-            if (fruit.y > this.canvas.height + 100) {
-                if (!fruit.sliced && !fruit.isBomb) {
-                    // Missed a fruit
+            // Remove if off screen (any side)
+            const offScreen = fruit.y > this.canvas.height + 100 ||
+                            fruit.x < -100 ||
+                            fruit.x > this.canvas.width + 100 ||
+                            fruit.y < -100;
+
+            if (offScreen) {
+                // Only lose life if fruit went off bottom and wasn't sliced
+                if (fruit.y > this.canvas.height + 100 && !fruit.sliced && !fruit.isBomb) {
                     this.lives--;
                     this.combo = 0;
 
@@ -190,11 +195,6 @@ class FruitSlash {
                         this.gameOver();
                     }
                 }
-                this.fruits.splice(i, 1);
-            }
-
-            // Remove sliced fruits
-            if (fruit.sliced && fruit.y > this.canvas.height + 100) {
                 this.fruits.splice(i, 1);
             }
         }

@@ -1,10 +1,11 @@
 // Ship Battle - Naval battle with side control panels
 class ShipBattle {
-    constructor(canvas, gameHub, playerCount) {
+    constructor(canvas, gameHub, playerCount, autoShoot = false) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.gameHub = gameHub;
         this.playerCount = playerCount;
+        this.autoShoot = autoShoot;
 
         this.isRunning = false;
         this.ships = [];
@@ -129,21 +130,26 @@ class ShipBattle {
             rightBtn.addEventListener('mouseup', () => this.ships[i].turnDirection = 0);
             panel.appendChild(rightBtn);
 
-            // Shoot button
-            const shootBtn = document.createElement('button');
-            shootBtn.className = 'control-btn shoot';
-            shootBtn.innerHTML = '💣';
-            shootBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
+            // Shoot button (only if not auto-shoot)
+            if (!this.autoShoot) {
+                const shootBtn = document.createElement('button');
+                shootBtn.className = 'control-btn shoot';
+                shootBtn.innerHTML = '💣';
+                shootBtn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.ships[i].shooting = true;
+                });
+                shootBtn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.ships[i].shooting = false;
+                });
+                shootBtn.addEventListener('mousedown', () => this.ships[i].shooting = true);
+                shootBtn.addEventListener('mouseup', () => this.ships[i].shooting = false);
+                panel.appendChild(shootBtn);
+            } else {
+                // Auto shoot is always on
                 this.ships[i].shooting = true;
-            });
-            shootBtn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                this.ships[i].shooting = false;
-            });
-            shootBtn.addEventListener('mousedown', () => this.ships[i].shooting = true);
-            shootBtn.addEventListener('mouseup', () => this.ships[i].shooting = false);
-            panel.appendChild(shootBtn);
+            }
 
             gameUI.appendChild(panel);
             this.controlPanels.push(panel);

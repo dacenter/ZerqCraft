@@ -1,6 +1,6 @@
 // Race Track Pro - Racing with side control panels
 class RaceTrackPro {
-    constructor(canvas, gameHub, playerCount) {
+    constructor(canvas, gameHub, playerCount, autoShoot = false) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.gameHub = gameHub;

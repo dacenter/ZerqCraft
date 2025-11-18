@@ -28,8 +28,14 @@ class GameHub {
             this.particleSystem = new ParticleSystem();
         }
 
-        // Prevent default touch behaviors
-        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+        // Prevent default touch behaviors (but allow scrolling in menus)
+        document.addEventListener('touchmove', (e) => {
+            // Allow scroll in games-grid-container
+            if (e.target.closest('.games-grid-container, .player-selection-container, .leaderboard-container, .settings-container')) {
+                return;
+            }
+            e.preventDefault();
+        }, { passive: false });
         document.addEventListener('gesturestart', (e) => e.preventDefault());
 
         console.log('🎮 ZerqCraft Gaming Hub Initialized!');
@@ -92,15 +98,16 @@ class GameHub {
         document.querySelectorAll('.player-count-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const playerCount = parseInt(btn.dataset.players);
+                const autoShoot = document.getElementById('auto-shoot-toggle').checked;
                 if (this.pendingGameName) {
-                    this.startGame(this.pendingGameName, playerCount);
+                    this.startGame(this.pendingGameName, playerCount, autoShoot);
                 }
                 this.createTouchFeedback(e.pageX, e.pageY);
             });
         });
     }
 
-    startGame(gameName, playerCount = null) {
+    startGame(gameName, playerCount = null, autoShoot = false) {
         console.log(`🎮 Starting game: ${gameName}`, playerCount ? `with ${playerCount} players` : '');
 
         // Check if this game requires player selection
@@ -181,19 +188,19 @@ class GameHub {
                 break;
             case 'race-track-pro':
                 gameTitle.textContent = '🏁 RACE TRACK PRO';
-                this.currentGame = new RaceTrackPro(canvas, this, playerCount);
+                this.currentGame = new RaceTrackPro(canvas, this, playerCount, autoShoot);
                 break;
             case 'battle-tanks':
                 gameTitle.textContent = '🎖️ BATTLE TANKS';
-                this.currentGame = new BattleTanks(canvas, this, playerCount);
+                this.currentGame = new BattleTanks(canvas, this, playerCount, autoShoot);
                 break;
             case 'snake-arena':
                 gameTitle.textContent = '🐍 SNAKE ARENA';
-                this.currentGame = new SnakeArena(canvas, this, playerCount);
+                this.currentGame = new SnakeArena(canvas, this, playerCount, autoShoot);
                 break;
             case 'ship-battle':
                 gameTitle.textContent = '⚓ SHIP BATTLE';
-                this.currentGame = new ShipBattle(canvas, this, playerCount);
+                this.currentGame = new ShipBattle(canvas, this, playerCount, autoShoot);
                 break;
         }
 
