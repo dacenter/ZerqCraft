@@ -8,8 +8,8 @@ class MultiplayerTetris {
 
         this.isRunning = false;
         this.players = [];
-        this.currentPiece = null;
-        this.nextPiece = null;
+        this.currentPieceTemplate = null; // Общий шаблон фигуры
+        this.nextPieceTemplate = null;
 
         this.playerColors = ['#ff6b6b', '#4ecdc4', '#f39c12', '#9b59b6', '#2ecc71', '#e67e22'];
 
@@ -17,9 +17,9 @@ class MultiplayerTetris {
         this.rows = 20;
         this.cellSize = 0;
 
-        this.dropSpeed = 1000; // Initial speed (ms)
-        this.minDropSpeed = 100; // Max speed
-        this.speedIncrease = 50; // Speed increase per level
+        this.dropSpeed = 1000;
+        this.minDropSpeed = 100;
+        this.speedIncrease = 50;
         this.linesForLevel = 10;
 
         this.dropCounter = 0;
@@ -52,6 +52,7 @@ class MultiplayerTetris {
                 gridX: gridX,
                 gridY: gridY,
                 grid: this.createGrid(),
+                piece: null, // Своя позиция фигуры
                 touchId: null,
                 touchStartX: 0,
                 touchStartY: 0,
@@ -73,11 +74,11 @@ class MultiplayerTetris {
 
     setupTouchHandlers() {
         this.touchHandler.on('onTouchStart', (touch) => {
-            if (!this.isRunning || !this.currentPiece) return;
+            if (!this.isRunning || !this.currentPieceTemplate) return;
 
-            // Determine which player's grid was touched
+            // Определяем, в чьей зоне было нажатие
             this.players.forEach(player => {
-                if (!player.alive) return;
+                if (!player.alive || !player.piece) return;
 
                 const touchInGrid = touch.x >= player.gridX &&
                                   touch.x <= player.gridX + this.cols * this.cellSize &&
@@ -94,19 +95,18 @@ class MultiplayerTetris {
         });
 
         this.touchHandler.on('onTouchMove', (touch) => {
-            if (!this.isRunning || !this.currentPiece) return;
+            if (!this.isRunning || !this.currentPieceTemplate) return;
 
             const player = this.players.find(p => p.touchId === touch.id);
-            if (player && player.alive) {
+            if (player && player.alive && player.piece) {
                 const dx = touch.x - player.touchStartX;
                 const dy = touch.y - player.touchStartY;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
-                // If moved more than 20 pixels, consider it dragging
                 if (distance > 20) {
                     player.isDragging = true;
 
-                    // Move piece left or right based on drag direction
+                    // Двигаем ТОЛЬКО фигуру этого игрока
                     if (Math.abs(dx) > Math.abs(dy)) {
                         if (dx > 0) {
                             this.movePiece(player, 1, 0);
@@ -122,7 +122,7 @@ class MultiplayerTetris {
         this.touchHandler.on('onTouchEnd', (touch) => {
             const player = this.players.find(p => p.touchId === touch.id);
             if (player) {
-                // If it was a tap (not drag), rotate the piece
+                // Если это был тап (не перетаскивание), поворачиваем
                 if (!player.isDragging) {
                     this.rotatePiece(player);
                 }
@@ -137,8 +137,20 @@ class MultiplayerTetris {
         this.isRunning = true;
         this.setupPlayers();
 
-        this.currentPiece = this.createPiece();
-        this.nextPiece = this.createPiece();
+        this.currentPieceTemplate = this.createPieceTemplate();
+        this.nextPieceTemplate = this.createPieceTemplate();
+
+        // Даем каждому игроку свою копию фигуры с начальными координатами
+        this.players.forEach(player => {
+            if (player.alive) {
+                player.piece = {
+                    shape: JSON.parse(JSON.stringify(this.currentPieceTemplate.shape)),
+                    color: this.currentPieceTemplate.color,
+                    x: Math.floor(this.cols / 2) - Math.floor(this.currentPieceTemplate.shape[0].length / 2),
+                    y: 0
+                };
+            }
+        });
 
         this.dropCounter = 0;
         this.lastTime = Date.now();
@@ -154,7 +166,7 @@ class MultiplayerTetris {
         this.touchHandler.destroy();
     }
 
-    createPiece() {
+    createPieceTemplate() {
         const pieces = [
             { shape: [[1,1,1,1]], color: '#00f0f0' }, // I
             { shape: [[1,1],[1,1]], color: '#f0f000' }, // O
@@ -165,13 +177,7 @@ class MultiplayerTetris {
             { shape: [[0,0,1],[1,1,1]], color: '#0000f0' }  // J
         ];
 
-        const piece = pieces[Math.floor(Math.random() * pieces.length)];
-        return {
-            shape: piece.shape,
-            color: piece.color,
-            x: Math.floor(this.cols / 2) - Math.floor(piece.shape[0].length / 2),
-            y: 0
-        };
+        return pieces[Math.floor(Math.random() * pieces.length)];
     }
 
     gameLoop() {
@@ -183,7 +189,6 @@ class MultiplayerTetris {
 
         this.dropCounter += deltaTime;
 
-        // Calculate speed based on average level
         const alivePlayers = this.players.filter(p => p.alive);
         if (alivePlayers.length > 0) {
             const avgLevel = alivePlayers.reduce((sum, p) => sum + p.level, 0) / alivePlayers.length;
@@ -192,7 +197,7 @@ class MultiplayerTetris {
 
         if (this.dropCounter > this.dropSpeed) {
             this.dropCounter = 0;
-            this.dropPiece();
+            this.dropAllPieces();
         }
 
         this.draw();
@@ -200,63 +205,70 @@ class MultiplayerTetris {
         this.animationFrame = requestAnimationFrame(() => this.gameLoop());
     }
 
-    dropPiece() {
-        if (!this.currentPiece) return;
+    dropAllPieces() {
+        if (!this.currentPieceTemplate) return;
 
-        const alivePlayers = this.players.filter(p => p.alive);
+        let allLocked = true;
 
-        alivePlayers.forEach(player => {
+        this.players.forEach(player => {
+            if (!player.alive || !player.piece) return;
+
             if (this.canMove(player, 0, 1)) {
-                this.currentPiece.y++;
+                player.piece.y++;
+                allLocked = false;
             } else {
                 this.lockPiece(player);
+            }
+        });
+
+        // Если все живые игроки заблокировали фигуру, создаем новую для всех
+        if (allLocked) {
+            this.spawnNewPiece();
+        }
+    }
+
+    spawnNewPiece() {
+        this.currentPieceTemplate = this.nextPieceTemplate;
+        this.nextPieceTemplate = this.createPieceTemplate();
+
+        this.players.forEach(player => {
+            if (player.alive) {
+                player.piece = {
+                    shape: JSON.parse(JSON.stringify(this.currentPieceTemplate.shape)),
+                    color: this.currentPieceTemplate.color,
+                    x: Math.floor(this.cols / 2) - Math.floor(this.currentPieceTemplate.shape[0].length / 2),
+                    y: 0
+                };
+
+                // Проверка game over
+                if (!this.canMove(player, 0, 0)) {
+                    player.alive = false;
+                    this.gameHub.playSound('hit');
+                    this.checkGameOver();
+                }
             }
         });
     }
 
     lockPiece(player) {
-        if (!this.currentPiece) return;
+        if (!player.piece) return;
 
-        // Add piece to grid
-        for (let row = 0; row < this.currentPiece.shape.length; row++) {
-            for (let col = 0; col < this.currentPiece.shape[row].length; col++) {
-                if (this.currentPiece.shape[row][col]) {
-                    const gridY = this.currentPiece.y + row;
-                    const gridX = this.currentPiece.x + col;
+        // Добавляем фигуру в grid игрока
+        for (let row = 0; row < player.piece.shape.length; row++) {
+            for (let col = 0; col < player.piece.shape[row].length; col++) {
+                if (player.piece.shape[row][col]) {
+                    const gridY = player.piece.y + row;
+                    const gridX = player.piece.x + col;
 
                     if (gridY >= 0 && gridY < this.rows && gridX >= 0 && gridX < this.cols) {
-                        player.grid[gridY][gridX] = this.currentPiece.color;
+                        player.grid[gridY][gridX] = player.piece.color;
                     }
                 }
             }
         }
 
-        // Check for completed lines
+        // Проверяем линии
         this.clearLines(player);
-
-        // Check if all alive players locked the piece
-        const allPlayersLocked = this.players.filter(p => p.alive).every(p => {
-            return !this.canMove(p, 0, 1);
-        });
-
-        if (allPlayersLocked) {
-            // Spawn new piece for all players
-            this.currentPiece = {...this.nextPiece};
-            this.nextPiece = this.createPiece();
-            this.currentPiece.x = Math.floor(this.cols / 2) - Math.floor(this.currentPiece.shape[0].length / 2);
-            this.currentPiece.y = 0;
-
-            // Check if game over for any player
-            this.players.filter(p => p.alive).forEach(p => {
-                if (!this.canMove(p, 0, 0)) {
-                    p.alive = false;
-                    this.gameHub.playSound('hit');
-                    this.checkGameOver();
-                }
-            });
-        }
-
-        this.updateScore();
     }
 
     clearLines(player) {
@@ -273,12 +285,10 @@ class MultiplayerTetris {
             }
 
             if (isFull) {
-                // Remove the line
                 player.grid.splice(row, 1);
-                // Add new empty line at top
                 player.grid.unshift(new Array(this.cols).fill(0));
                 linesCleared++;
-                row++; // Check this row again
+                row++;
             }
         }
 
@@ -289,23 +299,23 @@ class MultiplayerTetris {
 
             this.gameHub.playSound('powerup');
         }
+
+        this.updateScore();
     }
 
     canMove(player, offsetX, offsetY) {
-        if (!this.currentPiece) return false;
+        if (!player.piece) return false;
 
-        for (let row = 0; row < this.currentPiece.shape.length; row++) {
-            for (let col = 0; col < this.currentPiece.shape[row].length; col++) {
-                if (this.currentPiece.shape[row][col]) {
-                    const newX = this.currentPiece.x + col + offsetX;
-                    const newY = this.currentPiece.y + row + offsetY;
+        for (let row = 0; row < player.piece.shape.length; row++) {
+            for (let col = 0; col < player.piece.shape[row].length; col++) {
+                if (player.piece.shape[row][col]) {
+                    const newX = player.piece.x + col + offsetX;
+                    const newY = player.piece.y + row + offsetY;
 
-                    // Check boundaries
                     if (newX < 0 || newX >= this.cols || newY >= this.rows) {
                         return false;
                     }
 
-                    // Check collision with locked pieces
                     if (newY >= 0 && player.grid[newY][newX]) {
                         return false;
                     }
@@ -318,20 +328,19 @@ class MultiplayerTetris {
 
     movePiece(player, offsetX, offsetY) {
         if (this.canMove(player, offsetX, offsetY)) {
-            this.currentPiece.x += offsetX;
-            this.currentPiece.y += offsetY;
+            player.piece.x += offsetX;
+            player.piece.y += offsetY;
             return true;
         }
         return false;
     }
 
     rotatePiece(player) {
-        if (!this.currentPiece) return;
+        if (!player.piece) return;
 
-        // Save current state
-        const original = this.currentPiece.shape;
+        const original = player.piece.shape;
 
-        // Rotate 90 degrees clockwise
+        // Поворот на 90 градусов по часовой стрелке
         const rotated = [];
         for (let col = 0; col < original[0].length; col++) {
             const newRow = [];
@@ -341,15 +350,14 @@ class MultiplayerTetris {
             rotated.push(newRow);
         }
 
-        // Try rotation
-        this.currentPiece.shape = rotated;
+        player.piece.shape = rotated;
 
-        // Check if valid
+        // Проверка валидности
         if (!this.canMove(player, 0, 0)) {
-            // Try wall kick
+            // Пробуем wall kick
             if (!this.canMove(player, 1, 0) && !this.canMove(player, -1, 0)) {
-                // Rotation failed, revert
-                this.currentPiece.shape = original;
+                // Откат
+                player.piece.shape = original;
                 return;
             }
         }
@@ -402,19 +410,17 @@ class MultiplayerTetris {
     }
 
     draw() {
-        // Clear canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Background
         const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
         gradient.addColorStop(0, '#1a1a2e');
         gradient.addColorStop(1, '#0f0f1e');
         this.ctx.fillStyle = gradient;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw each player's grid
+        // Рисуем каждого игрока
         this.players.forEach(player => {
-            // Player label
+            // Имя и статистика
             this.ctx.font = 'bold 24px Arial';
             this.ctx.fillStyle = player.color;
             this.ctx.textAlign = 'center';
@@ -424,7 +430,6 @@ class MultiplayerTetris {
                 player.gridY - 80
             );
 
-            // Score and level
             this.ctx.font = 'bold 18px Arial';
             this.ctx.fillStyle = 'white';
             this.ctx.fillText(
@@ -489,7 +494,7 @@ class MultiplayerTetris {
                 return;
             }
 
-            // Draw locked pieces
+            // Locked pieces
             for (let row = 0; row < this.rows; row++) {
                 for (let col = 0; col < this.cols; col++) {
                     if (player.grid[row][col]) {
@@ -501,7 +506,6 @@ class MultiplayerTetris {
                             this.cellSize - 2
                         );
 
-                        // Add border for 3D effect
                         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
                         this.ctx.lineWidth = 2;
                         this.ctx.strokeRect(
@@ -514,19 +518,18 @@ class MultiplayerTetris {
                 }
             }
 
-            // Draw current piece
-            if (this.currentPiece) {
-                this.ctx.fillStyle = this.currentPiece.color;
+            // Current piece ЭТОГО игрока
+            if (player.piece) {
+                this.ctx.fillStyle = player.piece.color;
 
-                for (let row = 0; row < this.currentPiece.shape.length; row++) {
-                    for (let col = 0; col < this.currentPiece.shape[row].length; col++) {
-                        if (this.currentPiece.shape[row][col]) {
-                            const x = player.gridX + (this.currentPiece.x + col) * this.cellSize + 1;
-                            const y = player.gridY + (this.currentPiece.y + row) * this.cellSize + 1;
+                for (let row = 0; row < player.piece.shape.length; row++) {
+                    for (let col = 0; col < player.piece.shape[row].length; col++) {
+                        if (player.piece.shape[row][col]) {
+                            const x = player.gridX + (player.piece.x + col) * this.cellSize + 1;
+                            const y = player.gridY + (player.piece.y + row) * this.cellSize + 1;
 
                             this.ctx.fillRect(x, y, this.cellSize - 2, this.cellSize - 2);
 
-                            // Add border
                             this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
                             this.ctx.lineWidth = 2;
                             this.ctx.strokeRect(x, y, this.cellSize - 2, this.cellSize - 2);
@@ -553,8 +556,8 @@ class MultiplayerTetris {
             }
         });
 
-        // Next piece preview (center)
-        if (this.nextPiece) {
+        // Next piece preview
+        if (this.nextPieceTemplate) {
             const centerX = this.canvas.width / 2;
             const centerY = 50;
 
@@ -564,14 +567,14 @@ class MultiplayerTetris {
             this.ctx.fillText('Следующая фигура:', centerX, centerY - 30);
 
             const previewSize = this.cellSize * 0.8;
-            const previewX = centerX - (this.nextPiece.shape[0].length * previewSize) / 2;
+            const previewX = centerX - (this.nextPieceTemplate.shape[0].length * previewSize) / 2;
             const previewY = centerY;
 
-            this.ctx.fillStyle = this.nextPiece.color;
+            this.ctx.fillStyle = this.nextPieceTemplate.color;
 
-            for (let row = 0; row < this.nextPiece.shape.length; row++) {
-                for (let col = 0; col < this.nextPiece.shape[row].length; col++) {
-                    if (this.nextPiece.shape[row][col]) {
+            for (let row = 0; row < this.nextPieceTemplate.shape.length; row++) {
+                for (let col = 0; col < this.nextPieceTemplate.shape[row].length; col++) {
+                    if (this.nextPieceTemplate.shape[row][col]) {
                         const x = previewX + col * previewSize;
                         const y = previewY + row * previewSize;
 
