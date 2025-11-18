@@ -11,7 +11,7 @@ class GameHub {
         };
 
         // Games that require player count selection
-        this.multiplayerGames = ['race-track-pro', 'battle-tanks', 'snake-arena', 'ship-battle'];
+        this.multiplayerGames = ['race-track-pro', 'battle-tanks', 'snake-arena', 'ship-battle', 'air-hockey', 'space-defender', 'food-fight'];
 
         this.init();
     }
@@ -144,7 +144,7 @@ class GameHub {
                 break;
             case 'air-hockey':
                 gameTitle.textContent = '🏒 AIR HOCKEY';
-                this.currentGame = new AirHockey(canvas, this);
+                this.currentGame = new AirHockey(canvas, this, playerCount);
                 break;
             case 'color-splash':
                 gameTitle.textContent = '🎨 COLOR SPLASH';
@@ -168,7 +168,7 @@ class GameHub {
                 break;
             case 'space-defender':
                 gameTitle.textContent = '🚀 SPACE DEFENDER';
-                this.currentGame = new SpaceDefender(canvas, this);
+                this.currentGame = new SpaceDefender(canvas, this, playerCount);
                 break;
             case 'tower-battle':
                 gameTitle.textContent = '🏰 TOWER BATTLE';
@@ -184,7 +184,7 @@ class GameHub {
                 break;
             case 'food-fight':
                 gameTitle.textContent = '🍕 FOOD FIGHT';
-                this.currentGame = new FoodFight(canvas, this);
+                this.currentGame = new FoodFight(canvas, this, playerCount);
                 break;
             case 'race-track-pro':
                 gameTitle.textContent = '🏁 RACE TRACK PRO';
@@ -217,11 +217,25 @@ class GameHub {
             'race-track-pro': '🏁 RACE TRACK PRO',
             'battle-tanks': '🎖️ BATTLE TANKS',
             'snake-arena': '🐍 SNAKE ARENA',
-            'ship-battle': '⚓ SHIP BATTLE'
+            'ship-battle': '⚓ SHIP BATTLE',
+            'air-hockey': '🏒 AIR HOCKEY',
+            'space-defender': '🚀 SPACE DEFENDER',
+            'food-fight': '🍕 FOOD FIGHT'
         };
 
         const title = titles[gameName] || '🎮 ВЫБЕРИТЕ КОЛИЧЕСТВО ИГРОКОВ';
         document.getElementById('selection-game-title').textContent = `${title} - ВЫБЕРИТЕ ИГРОКОВ`;
+
+        // For Air Hockey, only show 2 and 4 player options
+        const playerButtons = document.querySelectorAll('.player-count-btn');
+        playerButtons.forEach(btn => {
+            const playerCount = parseInt(btn.dataset.players);
+            if (gameName === 'air-hockey') {
+                btn.style.display = (playerCount === 2 || playerCount === 4) ? 'flex' : 'none';
+            } else {
+                btn.style.display = 'flex';
+            }
+        });
 
         this.showScreen('player-selection');
     }

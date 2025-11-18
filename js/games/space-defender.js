@@ -1,32 +1,56 @@
-// Space Defender - Cooperative space shooter
+// Space Defender - Competitive multiplayer space shooter
 class SpaceDefender {
-    constructor(canvas, gameHub) {
+    constructor(canvas, gameHub, playerCount = 2) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.gameHub = gameHub;
+        this.playerCount = playerCount || 2;
 
         this.isRunning = false;
-        this.score = 0;
         this.wave = 1;
-        this.lives = 10; // More lives for easier gameplay
 
-        this.ships = []; // Player ships (one per touch)
+        this.players = [];
         this.enemies = [];
         this.bullets = [];
         this.explosions = [];
         this.stars = [];
+
+        this.playerColors = ['#4ecdc4', '#ff6b6b', '#ffd700', '#9b59b6'];
+        this.sectorWidth = 0;
 
         this.spawnInterval = null;
         this.shootInterval = null;
         this.animationFrame = null;
 
         this.touchHandler = new TouchHandler(canvas);
+        this.setupPlayers();
         this.setupTouchHandlers();
-
         this.createStarfield();
     }
 
+    setupPlayers() {
+        this.players = [];
+        this.sectorWidth = this.canvas.width / this.playerCount;
+
+        for (let i = 0; i < this.playerCount; i++) {
+            this.players.push({
+                id: i,
+                name: `Игрок ${i + 1}`,
+                sector: i,
+                x: this.sectorWidth * i + this.sectorWidth / 2,
+                y: this.canvas.height - 80,
+                touchId: null,
+                radius: 30,
+                color: this.playerColors[i],
+                score: 0,
+                lives: 5,
+                alive: true
+            });
+        }
+    }
+
     createStarfield() {
+        this.stars = [];
         for (let i = 0; i < 100; i++) {
             this.stars.push({
                 x: Math.random() * this.canvas.width,
@@ -41,53 +65,47 @@ class SpaceDefender {
         this.touchHandler.on('onTouchStart', (touch) => {
             if (!this.isRunning) return;
 
-            // Create or assign ship to touch
-            const ship = {
-                touchId: touch.id,
-                x: touch.x,
-                y: touch.y,
-                radius: 30,
-                color: this.getShipColor(this.ships.length),
-                lastShot: 0
-            };
+            // Assign touch to player based on sector
+            const sectorIndex = Math.floor(touch.x / this.sectorWidth);
+            const player = this.players[sectorIndex];
 
-            this.ships.push(ship);
+            if (player && player.alive && player.touchId === null) {
+                player.touchId = touch.id;
+            }
         });
 
         this.touchHandler.on('onTouchMove', (touch) => {
             if (!this.isRunning) return;
 
-            const ship = this.ships.find(s => s.touchId === touch.id);
-            if (ship) {
-                ship.x = touch.x;
-                ship.y = touch.y;
+            const player = this.players.find(p => p.touchId === touch.id);
+            if (player && player.alive) {
+                // Constrain to player's sector
+                const sectorLeft = player.sector * this.sectorWidth;
+                const sectorRight = sectorLeft + this.sectorWidth;
+
+                player.x = Math.max(sectorLeft + player.radius, Math.min(sectorRight - player.radius, touch.x));
+                player.y = Math.max(this.canvas.height / 2, Math.min(this.canvas.height - player.radius, touch.y));
             }
         });
 
         this.touchHandler.on('onTouchEnd', (touch) => {
-            const index = this.ships.findIndex(s => s.touchId === touch.id);
-            if (index !== -1) {
-                this.ships.splice(index, 1);
+            const player = this.players.find(p => p.touchId === touch.id);
+            if (player) {
+                player.touchId = null;
             }
         });
     }
 
-    getShipColor(index) {
-        const colors = ['#4ecdc4', '#ff6b6b', '#f39c12', '#9b59b6'];
-        return colors[index % colors.length];
-    }
-
     start() {
         this.isRunning = true;
-        this.score = 0;
         this.wave = 1;
-        this.lives = 10; // Start with more lives
-        this.ships = [];
+
+        this.setupPlayers();
         this.enemies = [];
         this.bullets = [];
         this.explosions = [];
 
-        this.gameHub.updateScore(this.score);
+        this.updateScore();
 
         // Spawn enemies
         this.spawnWave();
@@ -100,8 +118,10 @@ class SpaceDefender {
 
         // Auto-shoot
         this.shootInterval = setInterval(() => {
-            this.ships.forEach(ship => {
-                this.shootBullet(ship);
+            this.players.forEach(player => {
+                if (player.alive && player.touchId !== null) {
+                    this.shootBullet(player);
+                }
             });
         }, 200);
 
@@ -117,54 +137,67 @@ class SpaceDefender {
     }
 
     spawnWave() {
-        const enemyCount = 3 + this.wave; // Fewer enemies per wave
+        const enemyCount = 3 + this.wave;
 
         for (let i = 0; i < enemyCount; i++) {
             setTimeout(() => {
                 this.spawnEnemy();
-            }, i * 500); // Longer delay between spawns
+            }, i * 800);
         }
     }
 
     spawnEnemy() {
+        // Pick random sector with alive player
+        const alivePlayers = this.players.filter(p => p.alive);
+        if (alivePlayers.length === 0) return;
+
+        const targetPlayer = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+        const sector = targetPlayer.sector;
+
         const types = ['basic', 'fast', 'tank'];
         const type = types[Math.floor(Math.random() * Math.min(types.length, Math.floor(this.wave / 2) + 1))];
 
+        // Spawn in sector
+        const sectorLeft = sector * this.sectorWidth;
+        const sectorRight = sectorLeft + this.sectorWidth;
+
         let enemy = {
-            x: Math.random() * this.canvas.width,
+            sector: sector,
+            x: sectorLeft + Math.random() * (sectorRight - sectorLeft),
             y: -50,
             type: type,
             hp: 1,
-            speed: 1.5, // Slower base speed
+            speed: 2,
             radius: 25,
-            emoji: '👾'
+            color: '#ff0000'
         };
 
         switch (type) {
             case 'fast':
-                enemy.speed = 3; // Slower fast enemies
-                enemy.emoji = '🛸';
+                enemy.speed = 4;
                 enemy.radius = 20;
+                enemy.color = '#ff9900';
                 break;
             case 'tank':
                 enemy.hp = 3;
-                enemy.speed = 1;
-                enemy.emoji = '💀';
+                enemy.speed = 1.5;
                 enemy.radius = 35;
+                enemy.color = '#990000';
                 break;
         }
 
         this.enemies.push(enemy);
     }
 
-    shootBullet(ship) {
+    shootBullet(player) {
         this.bullets.push({
-            x: ship.x,
-            y: ship.y,
+            playerId: player.id,
+            x: player.x,
+            y: player.y - player.radius,
             vx: 0,
             vy: -15,
             radius: 5,
-            color: ship.color
+            color: player.color
         });
 
         this.gameHub.playSound('shoot');
@@ -215,14 +248,18 @@ class SpaceDefender {
 
                     if (enemy.hp <= 0) {
                         // Enemy destroyed
-                        this.createExplosion(enemy.x, enemy.y);
+                        this.createExplosion(enemy.x, enemy.y, bullet.color);
                         this.enemies.splice(j, 1);
 
-                        const points = enemy.type === 'tank' ? 30 : enemy.type === 'fast' ? 20 : 10;
-                        this.score += points;
-                        this.gameHub.updateScore(this.score);
+                        // Award points to shooter
+                        const player = this.players[bullet.playerId];
+                        if (player && player.alive) {
+                            const points = enemy.type === 'tank' ? 30 : enemy.type === 'fast' ? 20 : 10;
+                            player.score += points;
+                        }
 
                         this.gameHub.playSound('explosion');
+                        this.updateScore();
                     }
 
                     this.bullets.splice(i, 1);
@@ -240,30 +277,22 @@ class SpaceDefender {
             // Check if reached bottom
             if (enemy.y > this.canvas.height + 50) {
                 this.enemies.splice(i, 1);
-                this.lives--;
 
-                if (this.lives <= 0) {
-                    this.gameOver();
+                // Player loses life
+                const player = this.players[enemy.sector];
+                if (player && player.alive) {
+                    player.lives--;
+
+                    if (player.lives <= 0) {
+                        player.alive = false;
+                        this.gameHub.playSound('hit');
+                        this.checkGameOver();
+                    }
+
+                    this.updateScore();
                 }
                 continue;
             }
-
-            // Check collision with ships
-            this.ships.forEach(ship => {
-                const dx = ship.x - enemy.x;
-                const dy = ship.y - enemy.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < ship.radius + enemy.radius) {
-                    // Ship hit enemy - destroy enemy
-                    this.createExplosion(enemy.x, enemy.y);
-                    this.enemies.splice(i, 1);
-
-                    const points = enemy.type === 'tank' ? 30 : enemy.type === 'fast' ? 20 : 10;
-                    this.score += points;
-                    this.gameHub.updateScore(this.score);
-                }
-            });
         }
 
         // Update explosions
@@ -275,21 +304,71 @@ class SpaceDefender {
         }
     }
 
-    createExplosion(x, y) {
+    createExplosion(x, y, color) {
         this.explosions.push({
             x,
             y,
             progress: 0,
-            maxRadius: 60
+            maxRadius: 60,
+            color: color || '#ff6b6b'
         });
 
         if (this.gameHub.particleSystem) {
-            this.gameHub.particleSystem.createExplosion(x, y, '#ff6b6b', 40);
+            this.gameHub.particleSystem.createExplosion(x, y, color || '#ff6b6b', 30);
         }
 
         if (navigator.vibrate && this.gameHub.settings.vibration) {
             navigator.vibrate(20);
         }
+    }
+
+    checkGameOver() {
+        const alivePlayers = this.players.filter(p => p.alive);
+
+        if (alivePlayers.length <= 1) {
+            this.endGame();
+        }
+    }
+
+    endGame() {
+        this.isRunning = false;
+        if (this.spawnInterval) clearInterval(this.spawnInterval);
+        if (this.shootInterval) clearInterval(this.shootInterval);
+
+        // Find winner (highest score among alive, or highest score if all dead)
+        const winner = this.players.reduce((best, player) => {
+            if (!best) return player;
+            if (player.alive && !best.alive) return player;
+            if (player.score > best.score) return player;
+            return best;
+        }, null);
+
+        if (winner) {
+            ScoreManager.saveScore('space-defender', winner.score);
+        }
+
+        setTimeout(() => {
+            const scoreStr = this.players
+                .map(p => `${p.name}: ${p.score}`)
+                .join('\n');
+
+            const message = `🚀 ИГРА ЗАВЕРШЕНА!\n\nПобедитель: ${winner ? winner.name : 'Никто'}\nВолна: ${this.wave}\n\n${scoreStr}\n\nСыграть еще раз?`;
+
+            if (confirm(message)) {
+                this.gameHub.showPlayerSelection('space-defender');
+            } else {
+                this.gameHub.backToMenu();
+            }
+        }, 1000);
+    }
+
+    updateScore() {
+        const aliveCount = this.players.filter(p => p.alive).length;
+        const scores = this.players
+            .map(p => `П${p.id + 1}: ${p.score}❤️${p.lives}${p.alive ? '' : '💀'}`)
+            .join(' | ');
+
+        this.gameHub.updateScore(`${scores} | WAVE ${this.wave}`);
     }
 
     draw() {
@@ -305,6 +384,54 @@ class SpaceDefender {
             this.ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
             this.ctx.fill();
         });
+        this.ctx.globalAlpha = 1;
+
+        // Draw sector dividers
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([10, 10]);
+
+        for (let i = 1; i < this.playerCount; i++) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(i * this.sectorWidth, 0);
+            this.ctx.lineTo(i * this.sectorWidth, this.canvas.height);
+            this.ctx.stroke();
+        }
+
+        this.ctx.setLineDash([]);
+
+        // Draw sector labels
+        this.players.forEach(player => {
+            const sectorX = player.sector * this.sectorWidth + this.sectorWidth / 2;
+
+            this.ctx.font = 'bold 32px Arial';
+            this.ctx.fillStyle = player.color;
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(`П${player.id + 1}`, sectorX, 40);
+
+            // Score and lives
+            this.ctx.font = 'bold 24px Arial';
+            this.ctx.fillStyle = 'white';
+            this.ctx.fillText(`${player.score}`, sectorX, 70);
+
+            // Lives
+            for (let i = 0; i < player.lives; i++) {
+                this.ctx.fillText('❤️', sectorX - 30 + i * 20, 100);
+            }
+
+            // Dead indicator
+            if (!player.alive) {
+                this.ctx.globalAlpha = 0.3;
+                this.ctx.fillStyle = 'black';
+                this.ctx.fillRect(player.sector * this.sectorWidth, 0, this.sectorWidth, this.canvas.height);
+
+                this.ctx.globalAlpha = 1;
+                this.ctx.font = 'bold 64px Arial';
+                this.ctx.fillStyle = '#ff0000';
+                this.ctx.fillText('💀', sectorX, this.canvas.height / 2);
+            }
+        });
+
         this.ctx.globalAlpha = 1;
 
         // Draw bullets
@@ -324,25 +451,43 @@ class SpaceDefender {
             this.ctx.translate(enemy.x, enemy.y);
 
             // Glow effect
-            this.ctx.shadowColor = '#ff0000';
+            this.ctx.shadowColor = enemy.color;
             this.ctx.shadowBlur = 20;
 
-            this.ctx.font = `${enemy.radius * 2}px Arial`;
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.fillText(enemy.emoji, 0, 0);
+            // Enemy body (alien ship shape)
+            this.ctx.fillStyle = enemy.color;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, enemy.radius, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Eyes
+            this.ctx.shadowBlur = 0;
+            this.ctx.fillStyle = 'black';
+            this.ctx.beginPath();
+            this.ctx.arc(-enemy.radius * 0.3, -enemy.radius * 0.2, enemy.radius * 0.15, 0, Math.PI * 2);
+            this.ctx.arc(enemy.radius * 0.3, -enemy.radius * 0.2, enemy.radius * 0.15, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Tentacles
+            this.ctx.strokeStyle = enemy.color;
+            this.ctx.lineWidth = 3;
+            for (let i = -1; i <= 1; i++) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(i * enemy.radius * 0.3, enemy.radius);
+                this.ctx.lineTo(i * enemy.radius * 0.4, enemy.radius * 1.5);
+                this.ctx.stroke();
+            }
 
             // HP bar for tanks
             if (enemy.type === 'tank') {
                 const barWidth = enemy.radius * 2;
                 const barHeight = 5;
 
-                this.ctx.shadowBlur = 0;
                 this.ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-                this.ctx.fillRect(-barWidth / 2, enemy.radius + 10, barWidth, barHeight);
+                this.ctx.fillRect(-barWidth / 2, enemy.radius + 20, barWidth, barHeight);
 
                 this.ctx.fillStyle = '#00ff00';
-                this.ctx.fillRect(-barWidth / 2, enemy.radius + 10, barWidth * (enemy.hp / 3), barHeight);
+                this.ctx.fillRect(-barWidth / 2, enemy.radius + 20, barWidth * (enemy.hp / 3), barHeight);
             }
 
             this.ctx.restore();
@@ -356,7 +501,7 @@ class SpaceDefender {
             this.ctx.globalAlpha = alpha;
 
             // Outer ring
-            this.ctx.strokeStyle = '#ff6b6b';
+            this.ctx.strokeStyle = exp.color;
             this.ctx.lineWidth = 8;
             this.ctx.beginPath();
             this.ctx.arc(exp.x, exp.y, radius, 0, Math.PI * 2);
@@ -373,88 +518,74 @@ class SpaceDefender {
         });
 
         // Draw ships
-        this.ships.forEach(ship => {
+        this.players.forEach(player => {
+            if (!player.alive) return;
+
             this.ctx.save();
-            this.ctx.translate(ship.x, ship.y);
+            this.ctx.translate(player.x, player.y);
 
             // Glow
-            this.ctx.shadowColor = ship.color;
+            this.ctx.shadowColor = player.color;
             this.ctx.shadowBlur = 20;
 
             // Ship body
-            this.ctx.fillStyle = ship.color;
+            this.ctx.fillStyle = player.color;
             this.ctx.beginPath();
-            this.ctx.moveTo(0, -ship.radius);
-            this.ctx.lineTo(ship.radius * 0.7, ship.radius);
-            this.ctx.lineTo(-ship.radius * 0.7, ship.radius);
+            this.ctx.moveTo(0, -player.radius);
+            this.ctx.lineTo(player.radius * 0.7, player.radius);
+            this.ctx.lineTo(-player.radius * 0.7, player.radius);
             this.ctx.closePath();
             this.ctx.fill();
+
+            // Wings
+            this.ctx.fillStyle = player.color;
+            this.ctx.globalAlpha = 0.7;
+            this.ctx.beginPath();
+            this.ctx.moveTo(-player.radius * 0.7, player.radius * 0.3);
+            this.ctx.lineTo(-player.radius * 1.2, player.radius * 0.8);
+            this.ctx.lineTo(-player.radius * 0.7, player.radius);
+            this.ctx.fill();
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(player.radius * 0.7, player.radius * 0.3);
+            this.ctx.lineTo(player.radius * 1.2, player.radius * 0.8);
+            this.ctx.lineTo(player.radius * 0.7, player.radius);
+            this.ctx.fill();
+
+            this.ctx.globalAlpha = 1;
 
             // Cockpit
             this.ctx.fillStyle = '#ffffff';
             this.ctx.beginPath();
-            this.ctx.arc(0, 0, ship.radius * 0.3, 0, Math.PI * 2);
+            this.ctx.arc(0, 0, player.radius * 0.3, 0, Math.PI * 2);
             this.ctx.fill();
+
+            // Player number
+            this.ctx.shadowBlur = 0;
+            this.ctx.fillStyle = 'black';
+            this.ctx.font = 'bold 18px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(`${player.id + 1}`, 0, 0);
 
             this.ctx.shadowBlur = 0;
             this.ctx.restore();
-        });
 
-        // Draw HUD
-        this.drawHUD();
-    }
-
-    drawHUD() {
-        // Lives
-        this.ctx.font = '48px Arial';
-        this.ctx.fillStyle = '#ff6b6b';
-        this.ctx.textAlign = 'left';
-
-        for (let i = 0; i < this.lives; i++) {
-            this.ctx.fillText('❤️', 30 + i * 60, 50);
-        }
-
-        // Wave
-        this.ctx.font = 'bold 56px Arial';
-        this.ctx.fillStyle = '#4ecdc4';
-        this.ctx.strokeStyle = '#000';
-        this.ctx.lineWidth = 4;
-        this.ctx.textAlign = 'right';
-
-        const waveText = `WAVE ${this.wave}`;
-        this.ctx.strokeText(waveText, this.canvas.width - 30, 60);
-        this.ctx.fillText(waveText, this.canvas.width - 30, 60);
-
-        // Instructions (if no ships)
-        if (this.ships.length === 0) {
-            this.ctx.font = 'bold 48px Arial';
-            this.ctx.fillStyle = 'white';
-            this.ctx.textAlign = 'center';
-            this.ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 300) * 0.3;
-
-            this.ctx.fillText('👆 КОСНИТЕСЬ ЭКРАНА ДЛЯ ИГРЫ 👆', this.canvas.width / 2, this.canvas.height / 2);
-
-            this.ctx.globalAlpha = 1;
-        }
-    }
-
-    gameOver() {
-        this.isRunning = false;
-        if (this.spawnInterval) clearInterval(this.spawnInterval);
-        if (this.shootInterval) clearInterval(this.shootInterval);
-
-        ScoreManager.saveScore('space-defender', this.score);
-
-        setTimeout(() => {
-            if (confirm(`💥 GAME OVER!\n\nВолна: ${this.wave}\nСчет: ${this.score}\n\nСыграть еще раз?`)) {
-                this.start();
-            } else {
-                this.gameHub.backToMenu();
+            // Touch prompt if no touch
+            if (player.touchId === null) {
+                this.ctx.font = 'bold 24px Arial';
+                this.ctx.fillStyle = player.color;
+                this.ctx.textAlign = 'center';
+                this.ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 300) * 0.3;
+                this.ctx.fillText('👆 КОСНИТЕСЬ', player.x, player.y - 50);
+                this.ctx.globalAlpha = 1;
             }
-        }, 500);
+        });
     }
 
     resize() {
+        this.sectorWidth = this.canvas.width / this.playerCount;
+        this.setupPlayers();
         this.createStarfield();
     }
 }
