@@ -11,7 +11,7 @@ class GameHub {
         };
 
         // Games that require player count selection
-        this.multiplayerGames = ['race-track-pro', 'battle-tanks', 'snake-arena', 'ship-battle', 'air-hockey', 'space-defender', 'food-fight'];
+        this.multiplayerGames = ['race-track-pro', 'battle-tanks', 'snake-arena', 'ship-battle', 'air-hockey', 'space-defender', 'food-fight', 'school-quiz', 'multiplayer-tetris', 'color-matcher', 'math-rush', 'reaction-test', 'simon-memory'];
 
         this.init();
     }
@@ -202,6 +202,30 @@ class GameHub {
                 gameTitle.textContent = '⚓ SHIP BATTLE';
                 this.currentGame = new ShipBattle(canvas, this, playerCount, autoShoot);
                 break;
+            case 'school-quiz':
+                gameTitle.textContent = '🎓 ШКОЛЬНАЯ ВИКТОРИНА';
+                this.currentGame = new SchoolQuiz(canvas, this, playerCount);
+                break;
+            case 'multiplayer-tetris':
+                gameTitle.textContent = '🎮 MULTIPLAYER TETRIS';
+                this.currentGame = new MultiplayerTetris(canvas, this, playerCount);
+                break;
+            case 'color-matcher':
+                gameTitle.textContent = '🎨 COLOR MATCHER';
+                this.currentGame = new ColorMatcher(canvas, this, playerCount);
+                break;
+            case 'math-rush':
+                gameTitle.textContent = '🔢 MATH RUSH';
+                this.currentGame = new MathRush(canvas, this, playerCount);
+                break;
+            case 'reaction-test':
+                gameTitle.textContent = '⚡ REACTION TEST';
+                this.currentGame = new ReactionTest(canvas, this, playerCount);
+                break;
+            case 'simon-memory':
+                gameTitle.textContent = '🧠 SIMON MEMORY';
+                this.currentGame = new SimonMemory(canvas, this, playerCount);
+                break;
         }
 
         if (this.currentGame && this.currentGame.start) {
@@ -220,7 +244,13 @@ class GameHub {
             'ship-battle': '⚓ SHIP BATTLE',
             'air-hockey': '🏒 AIR HOCKEY',
             'space-defender': '🚀 SPACE DEFENDER',
-            'food-fight': '🍕 FOOD FIGHT'
+            'food-fight': '🍕 FOOD FIGHT',
+            'school-quiz': '🎓 ШКОЛЬНАЯ ВИКТОРИНА',
+            'multiplayer-tetris': '🎮 MULTIPLAYER TETRIS',
+            'color-matcher': '🎨 COLOR MATCHER',
+            'math-rush': '🔢 MATH RUSH',
+            'reaction-test': '⚡ REACTION TEST',
+            'simon-memory': '🧠 SIMON MEMORY'
         };
 
         const title = titles[gameName] || '🎮 ВЫБЕРИТЕ КОЛИЧЕСТВО ИГРОКОВ';
