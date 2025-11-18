@@ -45,6 +45,8 @@ class AirHockey {
         this.goalWidth = 300;
         this.friction = 0.99;
         this.bounceDamping = 0.9;
+        this.gameTime = 60; // 60 seconds game time
+        this.timerInterval = null;
 
         this.animationFrame = null;
 
@@ -54,16 +56,21 @@ class AirHockey {
 
     setupTouchHandlers() {
         this.touchHandler.on('onTouchStart', (touch) => {
-            // Assign touch to nearest paddle
-            this.paddles.forEach(paddle => {
-                const dx = touch.x - paddle.x;
-                const dy = touch.y - paddle.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+            // Assign touch based on field half
+            const midpoint = this.canvas.height / 2;
 
-                if (distance < paddle.radius * 2 || paddle.touchId === null) {
-                    paddle.touchId = touch.id;
+            // Determine which half the touch is in
+            if (touch.y > midpoint) {
+                // Bottom half - Player 1
+                if (this.paddles[0].touchId === null) {
+                    this.paddles[0].touchId = touch.id;
                 }
-            });
+            } else {
+                // Top half - Player 2
+                if (this.paddles[1].touchId === null) {
+                    this.paddles[1].touchId = touch.id;
+                }
+            }
         });
 
         this.touchHandler.on('onTouchMove', (touch) => {
@@ -96,14 +103,26 @@ class AirHockey {
     start() {
         this.isRunning = true;
         this.scores = { player1: 0, player2: 0 };
+        this.gameTime = 60;
         this.resetPuck();
         this.gameLoop();
         this.updateScoreDisplay();
+
+        // Start timer
+        this.timerInterval = setInterval(() => {
+            this.gameTime--;
+            this.updateScoreDisplay();
+
+            if (this.gameTime <= 0) {
+                this.timeUp();
+            }
+        }, 1000);
     }
 
     stop() {
         this.isRunning = false;
         if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
+        if (this.timerInterval) clearInterval(this.timerInterval);
         this.touchHandler.destroy();
     }
 
@@ -230,19 +249,56 @@ class AirHockey {
 
         this.gameHub.playSound('goal');
 
-        // Check for winner
-        if (this.scores[player] >= 7) {
-            this.gameOver(player);
-        } else {
-            // Reset for next round
-            setTimeout(() => {
+        // Reset for next round
+        setTimeout(() => {
+            if (this.isRunning) {
                 this.resetPuck();
-            }, 2000);
-        }
+            }
+        }, 2000);
     }
 
     updateScoreDisplay() {
-        this.gameHub.updateScore(`${this.scores.player1} : ${this.scores.player2}`);
+        const minutes = Math.floor(this.gameTime / 60);
+        const seconds = this.gameTime % 60;
+        const timeStr = `${seconds}s`;
+        this.gameHub.updateScore(`${this.scores.player1} : ${this.scores.player2} | ⏱️ ${timeStr}`);
+    }
+
+    timeUp() {
+        this.isRunning = false;
+        if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
+        if (this.timerInterval) clearInterval(this.timerInterval);
+
+        // Determine winner
+        let winner, winnerName;
+        const finalScore = `${this.scores.player1} : ${this.scores.player2}`;
+
+        if (this.scores.player1 > this.scores.player2) {
+            winner = 'player1';
+            winnerName = 'ИГРОК 1 (Синий)';
+        } else if (this.scores.player2 > this.scores.player1) {
+            winner = 'player2';
+            winnerName = 'ИГРОК 2 (Красный)';
+        } else {
+            winnerName = 'НИЧЬЯ';
+        }
+
+        // Save score
+        if (winner) {
+            ScoreManager.saveScore('air-hockey', this.scores[winner]);
+        }
+
+        setTimeout(() => {
+            const message = winner
+                ? `🏆 ПОБЕДИЛ ${winnerName}!\n\nСчет: ${finalScore}\n\nСыграть еще раз?`
+                : `⏱️ ВРЕМЯ ВЫШЛО!\n\n${winnerName}!\n\nСчет: ${finalScore}\n\nСыграть еще раз?`;
+
+            if (confirm(message)) {
+                this.start();
+            } else {
+                this.gameHub.backToMenu();
+            }
+        }, 1000);
     }
 
     draw() {
@@ -340,25 +396,6 @@ class AirHockey {
             this.ctx.lineTo(this.puck.x - this.puck.vx * 2, this.puck.y - this.puck.vy * 2);
             this.ctx.stroke();
         }
-    }
-
-    gameOver(winner) {
-        this.isRunning = false;
-        if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
-
-        const winnerName = winner === 'player1' ? 'ИГРОК 1 (Синий)' : 'ИГРОК 2 (Красный)';
-        const finalScore = `${this.scores.player1} : ${this.scores.player2}`;
-
-        // Save score (save the winner's score)
-        ScoreManager.saveScore('air-hockey', this.scores[winner]);
-
-        setTimeout(() => {
-            if (confirm(`🏆 ПОБЕДИЛ ${winnerName}!\n\nСчет: ${finalScore}\n\nСыграть еще раз?`)) {
-                this.start();
-            } else {
-                this.gameHub.backToMenu();
-            }
-        }, 1000);
     }
 
     resize() {

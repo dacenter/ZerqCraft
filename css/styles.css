@@ -39,7 +39,9 @@ body {
 #main-menu {
     padding: 40px;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .logo-container {
@@ -87,8 +89,35 @@ body {
     grid-template-columns: repeat(4, 1fr);
     gap: 40px;
     max-width: 1800px;
-    margin: 0 auto;
+    margin: 0 auto 100px auto;
     padding: 20px;
+}
+
+.games-grid-container {
+    width: 100%;
+    max-height: calc(100vh - 400px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 10px;
+}
+
+/* Custom scrollbar */
+.games-grid-container::-webkit-scrollbar {
+    width: 12px;
+}
+
+.games-grid-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.games-grid-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+}
+
+.games-grid-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
 }
 
 .game-card {

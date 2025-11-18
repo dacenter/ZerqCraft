@@ -81,15 +81,15 @@ class FruitSlash {
         const fruit = {
             x: Math.random() * this.canvas.width,
             y: this.canvas.height + 50,
-            vx: (Math.random() - 0.5) * 8,
-            vy: -(Math.random() * 15 + 20),
-            radius: 40,
+            vx: (Math.random() - 0.5) * 5, // Slower horizontal movement
+            vy: -(Math.random() * 8 + 12), // Slower upward velocity
+            radius: 60, // Bigger fruits
             emoji: isBomb ? this.bombEmoji : this.fruitTypes[Math.floor(Math.random() * this.fruitTypes.length)],
             rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: (Math.random() - 0.5) * 0.2,
+            rotationSpeed: (Math.random() - 0.5) * 0.15, // Slower rotation
             isBomb: isBomb,
             sliced: false,
-            gravity: 0.5
+            gravity: 0.4 // Less gravity for slower fall
         };
 
         this.fruits.push(fruit);

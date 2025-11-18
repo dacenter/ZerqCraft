@@ -142,6 +142,22 @@ class GameHub {
                 gameTitle.textContent = '🚀 SPACE DEFENDER';
                 this.currentGame = new SpaceDefender(canvas, this);
                 break;
+            case 'tower-battle':
+                gameTitle.textContent = '🏰 TOWER BATTLE';
+                this.currentGame = new TowerBattle(canvas, this);
+                break;
+            case 'paintball-arena':
+                gameTitle.textContent = '🎯 PAINTBALL ARENA';
+                this.currentGame = new PaintballArena(canvas, this);
+                break;
+            case 'racing-madness':
+                gameTitle.textContent = '🏎️ RACING MADNESS';
+                this.currentGame = new RacingMadness(canvas, this);
+                break;
+            case 'food-fight':
+                gameTitle.textContent = '🍕 FOOD FIGHT';
+                this.currentGame = new FoodFight(canvas, this);
+                break;
         }
 
         if (this.currentGame && this.currentGame.start) {
@@ -247,7 +263,11 @@ class GameHub {
             'memory-match': '🧩 Memory Match',
             'whack-a-mole': '🔨 Whack-a-Mole',
             'bubble-pop': '🫧 Bubble Pop',
-            'space-defender': '🚀 Space Defender'
+            'space-defender': '🚀 Space Defender',
+            'tower-battle': '🏰 Tower Battle',
+            'paintball-arena': '🎯 Paintball Arena',
+            'racing-madness': '🏎️ Racing Madness',
+            'food-fight': '🍕 Food Fight'
         };
         return titles[gameKey] || gameKey;
     }

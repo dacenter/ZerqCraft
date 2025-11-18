@@ -8,7 +8,7 @@ class SpaceDefender {
         this.isRunning = false;
         this.score = 0;
         this.wave = 1;
-        this.lives = 3;
+        this.lives = 10; // More lives for easier gameplay
 
         this.ships = []; // Player ships (one per touch)
         this.enemies = [];
@@ -81,7 +81,7 @@ class SpaceDefender {
         this.isRunning = true;
         this.score = 0;
         this.wave = 1;
-        this.lives = 3;
+        this.lives = 10; // Start with more lives
         this.ships = [];
         this.enemies = [];
         this.bullets = [];
@@ -117,12 +117,12 @@ class SpaceDefender {
     }
 
     spawnWave() {
-        const enemyCount = 5 + this.wave * 2;
+        const enemyCount = 3 + this.wave; // Fewer enemies per wave
 
         for (let i = 0; i < enemyCount; i++) {
             setTimeout(() => {
                 this.spawnEnemy();
-            }, i * 300);
+            }, i * 500); // Longer delay between spawns
         }
     }
 
@@ -135,14 +135,14 @@ class SpaceDefender {
             y: -50,
             type: type,
             hp: 1,
-            speed: 2,
+            speed: 1.5, // Slower base speed
             radius: 25,
             emoji: '👾'
         };
 
         switch (type) {
             case 'fast':
-                enemy.speed = 4;
+                enemy.speed = 3; // Slower fast enemies
                 enemy.emoji = '🛸';
                 enemy.radius = 20;
                 break;
