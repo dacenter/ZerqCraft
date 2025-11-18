@@ -260,10 +260,23 @@ class WhackAMole {
             this.ctx.rotate(hammer.rotation);
             this.ctx.scale(hammer.scale, hammer.scale);
 
-            this.ctx.font = '80px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.fillText(this.hammerEmoji, 0, 0);
+            // Draw hammer handle
+            this.ctx.fillStyle = '#8B4513';
+            this.ctx.strokeStyle = '#654321';
+            this.ctx.lineWidth = 2;
+            this.ctx.fillRect(-5, -40, 10, 80);
+            this.ctx.strokeRect(-5, -40, 10, 80);
+
+            // Draw hammer head
+            this.ctx.fillStyle = '#888';
+            this.ctx.strokeStyle = '#444';
+            this.ctx.lineWidth = 3;
+            this.ctx.fillRect(-30, -50, 60, 30);
+            this.ctx.strokeRect(-30, -50, 60, 30);
+
+            // Metal shine
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            this.ctx.fillRect(-20, -45, 30, 10);
 
             this.ctx.restore();
         });
@@ -287,7 +300,6 @@ class WhackAMole {
             this.ctx.save();
 
             const moleY = hole.y + 20 - (hole.moleProgress * this.holeRadius * 1.5);
-
             this.ctx.translate(hole.x, moleY);
 
             // Glow for golden moles
@@ -296,17 +308,55 @@ class WhackAMole {
                 this.ctx.shadowBlur = 30;
             }
 
-            // Draw mole
-            this.ctx.font = `${this.holeRadius * 2}px Arial`;
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
+            // Draw mole body (brown circle)
+            const moleColor = hole.moleType === 'golden' ? '#ffd700' : '#8B4513';
+            this.ctx.fillStyle = moleColor;
+            this.ctx.strokeStyle = hole.moleType === 'golden' ? '#ff8c00' : '#654321';
+            this.ctx.lineWidth = 4;
 
+            // Body
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, this.holeRadius * 0.8, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            // Eyes
+            this.ctx.fillStyle = 'white';
+            this.ctx.beginPath();
+            this.ctx.arc(-this.holeRadius * 0.3, -this.holeRadius * 0.2, this.holeRadius * 0.2, 0, Math.PI * 2);
+            this.ctx.arc(this.holeRadius * 0.3, -this.holeRadius * 0.2, this.holeRadius * 0.2, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Pupils
+            this.ctx.fillStyle = 'black';
+            this.ctx.beginPath();
+            this.ctx.arc(-this.holeRadius * 0.3, -this.holeRadius * 0.2, this.holeRadius * 0.1, 0, Math.PI * 2);
+            this.ctx.arc(this.holeRadius * 0.3, -this.holeRadius * 0.2, this.holeRadius * 0.1, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Nose
+            this.ctx.fillStyle = hole.moleType === 'golden' ? '#ff6b6b' : '#ff69b4';
+            this.ctx.beginPath();
+            this.ctx.arc(0, this.holeRadius * 0.1, this.holeRadius * 0.15, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Star for golden moles
             if (hole.moleType === 'golden') {
-                // Golden mole with star effect
-                this.ctx.fillText('⭐', 0, -this.holeRadius * 0.5);
-                this.ctx.fillText(this.moleEmoji, 0, 0);
-            } else {
-                this.ctx.fillText(this.moleEmoji, 0, 0);
+                this.ctx.fillStyle = '#ff8c00';
+                this.ctx.strokeStyle = '#ffd700';
+                this.ctx.lineWidth = 2;
+                const starSize = this.holeRadius * 0.4;
+                this.ctx.beginPath();
+                for (let i = 0; i < 5; i++) {
+                    const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+                    const x = Math.cos(angle) * starSize;
+                    const y = Math.sin(angle) * starSize - this.holeRadius;
+                    if (i === 0) this.ctx.moveTo(x, y);
+                    else this.ctx.lineTo(x, y);
+                }
+                this.ctx.closePath();
+                this.ctx.fill();
+                this.ctx.stroke();
             }
 
             this.ctx.shadowBlur = 0;

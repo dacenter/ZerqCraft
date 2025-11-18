@@ -10,7 +10,8 @@ class PaintballArena {
         this.paintballs = [];
         this.splatters = [];
 
-        this.playerColors = ['#4ecdc4', '#ff6b6b', '#f39c12', '#9b59b6', '#1abc9c', '#e74c3c'];
+        this.playerColors = ['#ff0000', '#0000ff', '#00ff00', '#ffff00', '#ff00ff', '#00ffff'];
+        this.nextPlayerNumber = 1;
 
         this.animationFrame = null;
         this.touchHandler = new TouchHandler(canvas);
@@ -22,12 +23,14 @@ class PaintballArena {
             if (!this.isRunning) return;
 
             // Create new player for this touch
+            const playerIndex = this.players.length;
             const player = {
                 id: touch.id,
+                number: this.nextPlayerNumber++,
                 x: touch.x,
                 y: touch.y,
                 radius: 30,
-                color: this.playerColors[this.players.length % this.playerColors.length],
+                color: this.playerColors[playerIndex % this.playerColors.length],
                 hits: 0,
                 score: 0,
                 lastShot: Date.now()
@@ -275,10 +278,10 @@ class PaintballArena {
         // Player body
         this.ctx.fillStyle = player.color;
         this.ctx.strokeStyle = 'white';
-        this.ctx.lineWidth = 4;
+        this.ctx.lineWidth = 5;
 
         this.ctx.shadowColor = player.color;
-        this.ctx.shadowBlur = 15;
+        this.ctx.shadowBlur = 20;
 
         this.ctx.beginPath();
         this.ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
@@ -287,24 +290,44 @@ class PaintballArena {
 
         this.ctx.shadowBlur = 0;
 
-        // Player score
-        this.ctx.font = 'bold 32px Arial';
+        // Player number in center
+        this.ctx.font = 'bold 28px Arial';
         this.ctx.fillStyle = 'white';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.strokeStyle = '#000';
+        this.ctx.lineWidth = 4;
+
+        this.ctx.strokeText(`P${player.number}`, player.x, player.y);
+        this.ctx.fillText(`P${player.number}`, player.x, player.y);
+
+        // Player label above
+        this.ctx.font = 'bold 24px Arial';
+        this.ctx.fillStyle = player.color;
+        this.ctx.strokeStyle = 'white';
         this.ctx.lineWidth = 3;
 
-        this.ctx.strokeText(player.score.toString(), player.x, player.y);
-        this.ctx.fillText(player.score.toString(), player.x, player.y);
+        this.ctx.strokeText(`Игрок ${player.number}`, player.x, player.y - player.radius - 35);
+        this.ctx.fillText(`Игрок ${player.number}`, player.x, player.y - player.radius - 35);
+
+        // Score indicator
+        this.ctx.font = 'bold 22px Arial';
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.strokeStyle = '#000';
+        this.ctx.lineWidth = 3;
+
+        this.ctx.strokeText(`⭐${player.score}`, player.x, player.y - player.radius - 10);
+        this.ctx.fillText(`⭐${player.score}`, player.x, player.y - player.radius - 10);
 
         // Hit indicator
         if (player.hits > 0) {
             this.ctx.font = 'bold 20px Arial';
             this.ctx.fillStyle = '#ff0000';
-            this.ctx.textAlign = 'center';
+            this.ctx.strokeStyle = 'white';
+            this.ctx.lineWidth = 2;
 
-            this.ctx.fillText(`×${player.hits}`, player.x, player.y - player.radius - 10);
+            this.ctx.strokeText(`💥×${player.hits}`, player.x, player.y + player.radius + 20);
+            this.ctx.fillText(`💥×${player.hits}`, player.x, player.y + player.radius + 20);
         }
     }
 

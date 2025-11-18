@@ -9,6 +9,7 @@ class TowerBattle {
         this.towers = [];
         this.projectiles = [];
         this.explosions = [];
+        this.obstacles = []; // Flying obstacles
         this.activePlayers = 0;
 
         // Tower positions (corners of screen)
@@ -33,30 +34,44 @@ class TowerBattle {
             // Determine which tower this touch belongs to
             const towerIndex = this.getTowerByPosition(touch.x, touch.y);
 
-            if (towerIndex !== -1 && !this.towers[towerIndex].active) {
-                this.towers[towerIndex].active = true;
-                this.towers[towerIndex].touchId = touch.id;
-                this.activePlayers++;
+            if (towerIndex !== -1) {
+                if (!this.towers[towerIndex].active) {
+                    this.towers[towerIndex].active = true;
+                    this.activePlayers++;
+                }
+                // Update aim immediately
+                const tower = this.towers[towerIndex];
+                if (tower.hp > 0) {
+                    const dx = touch.x - tower.x;
+                    const dy = touch.y - tower.y;
+                    tower.targetAngle = Math.atan2(dy, dx);
+                    tower.currentTouchId = touch.id;
+                }
             }
         });
 
         this.touchHandler.on('onTouchMove', (touch) => {
             if (!this.isRunning) return;
 
-            // Update tower aim
-            this.towers.forEach(tower => {
-                if (tower.touchId === touch.id && tower.active && tower.hp > 0) {
+            // Check which quadrant the touch is in
+            const towerIndex = this.getTowerByPosition(touch.x, touch.y);
+
+            if (towerIndex !== -1) {
+                const tower = this.towers[towerIndex];
+                if (tower.active && tower.hp > 0) {
                     const dx = touch.x - tower.x;
                     const dy = touch.y - tower.y;
                     tower.targetAngle = Math.atan2(dy, dx);
+                    tower.currentTouchId = touch.id;
                 }
-            });
+            }
         });
 
         this.touchHandler.on('onTouchEnd', (touch) => {
+            // Clear current touch but keep tower active
             this.towers.forEach(tower => {
-                if (tower.touchId === touch.id) {
-                    tower.touchId = null;
+                if (tower.currentTouchId === touch.id) {
+                    tower.currentTouchId = null;
                 }
             });
         });
@@ -85,6 +100,7 @@ class TowerBattle {
         this.activePlayers = 0;
         this.projectiles = [];
         this.explosions = [];
+        this.obstacles = [];
 
         // Initialize towers
         this.towers = this.towerPositions.map(pos => ({
@@ -93,12 +109,18 @@ class TowerBattle {
             maxHp: 100,
             active: false,
             touchId: null,
+            currentTouchId: null,
             currentAngle: pos.angle * Math.PI / 180,
             targetAngle: pos.angle * Math.PI / 180,
             radius: 50,
             lastShot: 0,
             fireRate: 500 // ms between shots
         }));
+
+        // Create flying obstacles
+        for (let i = 0; i < 5; i++) {
+            this.spawnObstacle();
+        }
 
         this.gameHub.updateScore('Ждем игроков...');
 
@@ -200,6 +222,38 @@ class TowerBattle {
             }
         }
 
+        // Update obstacles
+        for (let i = this.obstacles.length - 1; i >= 0; i--) {
+            const obs = this.obstacles[i];
+            obs.x += obs.vx;
+            obs.y += obs.vy;
+            obs.rotation += obs.rotationSpeed;
+
+            // Remove if off screen
+            if (obs.x < -100 || obs.x > this.canvas.width + 100 ||
+                obs.y < -100 || obs.y > this.canvas.height + 100) {
+                this.obstacles.splice(i, 1);
+                this.spawnObstacle(); // Spawn new one
+                continue;
+            }
+
+            // Check collision with projectiles
+            for (let j = this.projectiles.length - 1; j >= 0; j--) {
+                const proj = this.projectiles[j];
+                const dx = obs.x - proj.x;
+                const dy = obs.y - proj.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < obs.radius + proj.radius) {
+                    // Obstacle blocks projectile
+                    this.projectiles.splice(j, 1);
+                    this.createExplosion(proj.x, proj.y, '#888');
+                    this.gameHub.playSound('hit');
+                    break;
+                }
+            }
+        }
+
         // Update explosions
         for (let i = this.explosions.length - 1; i >= 0; i--) {
             this.explosions[i].progress += 0.05;
@@ -211,6 +265,45 @@ class TowerBattle {
         // Update score display
         const aliveTowers = this.towers.filter(t => t.hp > 0).length;
         this.gameHub.updateScore(`Башен: ${aliveTowers} | Игроков: ${this.activePlayers}`);
+    }
+
+    spawnObstacle() {
+        const side = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+        let x, y, vx, vy;
+
+        switch (side) {
+            case 0: // Top
+                x = Math.random() * this.canvas.width;
+                y = -50;
+                vx = (Math.random() - 0.5) * 3;
+                vy = Math.random() * 2 + 1;
+                break;
+            case 1: // Right
+                x = this.canvas.width + 50;
+                y = Math.random() * this.canvas.height;
+                vx = -(Math.random() * 2 + 1);
+                vy = (Math.random() - 0.5) * 3;
+                break;
+            case 2: // Bottom
+                x = Math.random() * this.canvas.width;
+                y = this.canvas.height + 50;
+                vx = (Math.random() - 0.5) * 3;
+                vy = -(Math.random() * 2 + 1);
+                break;
+            case 3: // Left
+                x = -50;
+                y = Math.random() * this.canvas.height;
+                vx = Math.random() * 2 + 1;
+                vy = (Math.random() - 0.5) * 3;
+                break;
+        }
+
+        this.obstacles.push({
+            x, y, vx, vy,
+            radius: 25,
+            rotation: Math.random() * Math.PI * 2,
+            rotationSpeed: (Math.random() - 0.5) * 0.1
+        });
     }
 
     createExplosion(x, y, color) {
@@ -282,6 +375,43 @@ class TowerBattle {
             this.ctx.fill();
 
             this.ctx.shadowBlur = 0;
+        });
+
+        // Draw obstacles
+        this.obstacles.forEach(obs => {
+            this.ctx.save();
+            this.ctx.translate(obs.x, obs.y);
+            this.ctx.rotate(obs.rotation);
+
+            // Asteroid-like obstacle
+            this.ctx.fillStyle = '#7f8c8d';
+            this.ctx.strokeStyle = '#95a5a6';
+            this.ctx.lineWidth = 3;
+
+            this.ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const angle = (Math.PI * 2 * i) / 8;
+                const radius = obs.radius * (0.8 + Math.random() * 0.4);
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                if (i === 0) this.ctx.moveTo(x, y);
+                else this.ctx.lineTo(x, y);
+            }
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            // Warning stripes
+            this.ctx.strokeStyle = '#f39c12';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(-obs.radius * 0.5, -obs.radius * 0.5);
+            this.ctx.lineTo(obs.radius * 0.5, obs.radius * 0.5);
+            this.ctx.moveTo(obs.radius * 0.5, -obs.radius * 0.5);
+            this.ctx.lineTo(-obs.radius * 0.5, obs.radius * 0.5);
+            this.ctx.stroke();
+
+            this.ctx.restore();
         });
 
         // Draw explosions
