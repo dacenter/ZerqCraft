@@ -99,12 +99,70 @@
                 <p>Бросай еду!</p>
                 <div class="players">2-6 игроков</div>
             </div>
+
+            <div class="game-card" data-game="race-track-pro" style="--card-color: #ff6b9d">
+                <div class="game-icon">🏁</div>
+                <h3>Race Track Pro</h3>
+                <p>Гонки с управлением!</p>
+                <div class="players">2-6 игроков</div>
+            </div>
+
+            <div class="game-card" data-game="battle-tanks" style="--card-color: #4a5568">
+                <div class="game-icon">🎖️</div>
+                <h3>Battle Tanks</h3>
+                <p>Танковый бой!</p>
+                <div class="players">2-6 игроков</div>
+            </div>
+
+            <div class="game-card" data-game="snake-arena" style="--card-color: #48bb78">
+                <div class="game-icon">🐍</div>
+                <h3>Snake Arena</h3>
+                <p>Змейки PvP!</p>
+                <div class="players">2-6 игроков</div>
+            </div>
+
+            <div class="game-card" data-game="ship-battle" style="--card-color: #4299e1">
+                <div class="game-icon">⚓</div>
+                <h3>Ship Battle</h3>
+                <p>Морской бой!</p>
+                <div class="players">2-6 игроков</div>
+            </div>
             </div>
         </div>
 
         <div class="menu-footer">
             <button class="btn-settings">⚙️ Настройки</button>
             <button class="btn-leaderboard">🏆 Рекорды</button>
+        </div>
+    </div>
+
+    <!-- Player Selection Screen -->
+    <div id="player-selection" class="screen">
+        <div class="player-selection-container">
+            <h2 id="selection-game-title">🏎️ ВЫБЕРИТЕ КОЛИЧЕСТВО ИГРОКОВ</h2>
+            <div class="player-count-grid">
+                <button class="player-count-btn" data-players="2">
+                    <span class="player-number">2</span>
+                    <span class="player-label">ИГРОКА</span>
+                </button>
+                <button class="player-count-btn" data-players="3">
+                    <span class="player-number">3</span>
+                    <span class="player-label">ИГРОКА</span>
+                </button>
+                <button class="player-count-btn" data-players="4">
+                    <span class="player-number">4</span>
+                    <span class="player-label">ИГРОКА</span>
+                </button>
+                <button class="player-count-btn" data-players="5">
+                    <span class="player-number">5</span>
+                    <span class="player-label">ИГРОКОВ</span>
+                </button>
+                <button class="player-count-btn" data-players="6">
+                    <span class="player-number">6</span>
+                    <span class="player-label">ИГРОКОВ</span>
+                </button>
+            </div>
+            <button class="btn-back-menu">← В меню</button>
         </div>
     </div>
 
@@ -169,6 +227,10 @@
     <script src="js/games/paintball-arena.js"></script>
     <script src="js/games/racing-madness.js"></script>
     <script src="js/games/food-fight.js"></script>
+    <script src="js/games/race-track-pro.js"></script>
+    <script src="js/games/battle-tanks.js"></script>
+    <script src="js/games/snake-arena.js"></script>
+    <script src="js/games/ship-battle.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

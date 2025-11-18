@@ -444,6 +444,124 @@ body {
     }
 }
 
+/* Player Selection Screen */
+.player-selection-container {
+    text-align: center;
+    padding: 60px 40px;
+}
+
+.player-selection-container h2 {
+    font-size: 64px;
+    margin-bottom: 60px;
+    color: white;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.player-count-grid {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 60px;
+    flex-wrap: wrap;
+}
+
+.player-count-btn {
+    width: 180px;
+    height: 180px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.player-count-btn:hover {
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+.player-count-btn:active {
+    transform: translateY(-5px) scale(1.02);
+}
+
+.player-number {
+    font-size: 96px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.player-label {
+    font-size: 28px;
+    color: rgba(255,255,255,0.9);
+    font-weight: 600;
+}
+
+/* Side Control Panels */
+.control-panel {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 100;
+}
+
+.control-btn {
+    width: 100px;
+    height: 100px;
+    border: none;
+    border-radius: 20px;
+    font-size: 48px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.control-btn:active {
+    transform: scale(0.9);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.control-btn.left {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.control-btn.right {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.control-btn.shoot {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+}
+
+.control-btn.boost {
+    background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+    color: white;
+}
+
+.player-label-tag {
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+}
+
 /* Responsive adjustments for 50" display */
 @media (min-width: 3840px) {
     .main-title { font-size: 180px; }

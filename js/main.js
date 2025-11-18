@@ -3,11 +3,15 @@ class GameHub {
     constructor() {
         this.currentGame = null;
         this.currentScreen = 'main-menu';
+        this.pendingGameName = null; // For games requiring player selection
         this.settings = {
             volume: 70,
             music: 50,
             vibration: true
         };
+
+        // Games that require player count selection
+        this.multiplayerGames = ['race-track-pro', 'battle-tanks', 'snake-arena', 'ship-battle'];
 
         this.init();
     }
@@ -83,10 +87,27 @@ class GameHub {
             this.settings.vibration = e.target.checked;
             this.saveSettings();
         });
+
+        // Player count selection buttons
+        document.querySelectorAll('.player-count-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const playerCount = parseInt(btn.dataset.players);
+                if (this.pendingGameName) {
+                    this.startGame(this.pendingGameName, playerCount);
+                }
+                this.createTouchFeedback(e.pageX, e.pageY);
+            });
+        });
     }
 
-    startGame(gameName) {
-        console.log(`🎮 Starting game: ${gameName}`);
+    startGame(gameName, playerCount = null) {
+        console.log(`🎮 Starting game: ${gameName}`, playerCount ? `with ${playerCount} players` : '');
+
+        // Check if this game requires player selection
+        if (this.multiplayerGames.includes(gameName) && playerCount === null) {
+            this.showPlayerSelection(gameName);
+            return;
+        }
 
         // Stop current game if any
         if (this.currentGame && this.currentGame.stop) {
@@ -158,6 +179,22 @@ class GameHub {
                 gameTitle.textContent = '🍕 FOOD FIGHT';
                 this.currentGame = new FoodFight(canvas, this);
                 break;
+            case 'race-track-pro':
+                gameTitle.textContent = '🏁 RACE TRACK PRO';
+                this.currentGame = new RaceTrackPro(canvas, this, playerCount);
+                break;
+            case 'battle-tanks':
+                gameTitle.textContent = '🎖️ BATTLE TANKS';
+                this.currentGame = new BattleTanks(canvas, this, playerCount);
+                break;
+            case 'snake-arena':
+                gameTitle.textContent = '🐍 SNAKE ARENA';
+                this.currentGame = new SnakeArena(canvas, this, playerCount);
+                break;
+            case 'ship-battle':
+                gameTitle.textContent = '⚓ SHIP BATTLE';
+                this.currentGame = new ShipBattle(canvas, this, playerCount);
+                break;
         }
 
         if (this.currentGame && this.currentGame.start) {
@@ -165,11 +202,29 @@ class GameHub {
         }
     }
 
+    showPlayerSelection(gameName) {
+        this.pendingGameName = gameName;
+
+        // Update title based on game
+        const titles = {
+            'race-track-pro': '🏁 RACE TRACK PRO',
+            'battle-tanks': '🎖️ BATTLE TANKS',
+            'snake-arena': '🐍 SNAKE ARENA',
+            'ship-battle': '⚓ SHIP BATTLE'
+        };
+
+        const title = titles[gameName] || '🎮 ВЫБЕРИТЕ КОЛИЧЕСТВО ИГРОКОВ';
+        document.getElementById('selection-game-title').textContent = `${title} - ВЫБЕРИТЕ ИГРОКОВ`;
+
+        this.showScreen('player-selection');
+    }
+
     backToMenu() {
         if (this.currentGame && this.currentGame.stop) {
             this.currentGame.stop();
         }
         this.currentGame = null;
+        this.pendingGameName = null;
         this.showScreen('main-menu');
     }
 
@@ -267,7 +322,11 @@ class GameHub {
             'tower-battle': '🏰 Tower Battle',
             'paintball-arena': '🎯 Paintball Arena',
             'racing-madness': '🏎️ Racing Madness',
-            'food-fight': '🍕 Food Fight'
+            'food-fight': '🍕 Food Fight',
+            'race-track-pro': '🏁 Race Track Pro',
+            'battle-tanks': '🎖️ Battle Tanks',
+            'snake-arena': '🐍 Snake Arena',
+            'ship-battle': '⚓ Ship Battle'
         };
         return titles[gameKey] || gameKey;
     }
