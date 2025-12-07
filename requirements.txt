@@ -1,0 +1,20 @@
+# Python dependencies for MeteoData Big Data Landscape
+
+# Spark
+pyspark>=3.5.0
+
+# Kafka
+kafka-python>=2.0.2
+confluent-kafka>=2.3.0
+
+# InfluxDB
+influxdb-client>=1.38.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Development
+pytest>=7.4.0
+black>=23.0.0
+mypy>=1.5.0

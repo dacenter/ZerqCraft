@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+.env
+
+# Java/Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.idea/
+*.iml
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# Docker volumes (local data)
+**/data/
+**/*_data/
+
+# Spark
+spark-warehouse/
+metastore_db/
+derby.log
+
+# Output directories
+weather_output/
+output/
+checkpoints/
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Secrets (never commit!)
+*.env.local
+secrets/
+credentials/

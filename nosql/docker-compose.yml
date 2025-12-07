@@ -1,0 +1,77 @@
+version: '3.8'
+
+# NoSQL база данных InfluxDB для хранения временных рядов метеоданных
+#
+# Обоснование выбора InfluxDB:
+# 1. Специализированная time-series СУБД - оптимизирована для данных с временными метками
+# 2. Встроенный язык запросов InfluxQL и Flux - удобен для агрегации временных рядов
+# 3. Автоматическое downsampling - политики хранения с понижением разрешения
+# 4. Высокая скорость записи - критично для потоковых данных от множества станций
+# 5. Компактное хранение - сжатие данных "из коробки"
+# 6. Интеграция с Grafana - визуализация в реальном времени
+
+services:
+  influxdb:
+    image: influxdb:2.7
+    hostname: influxdb
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: adminpassword123
+      DOCKER_INFLUXDB_INIT_ORG: meteo-org
+      DOCKER_INFLUXDB_INIT_BUCKET: weather-data
+      DOCKER_INFLUXDB_INIT_RETENTION: 90d
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: meteo-secret-token-12345
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+      - ./config/influxdb-init.iql:/docker-entrypoint-initdb.d/init.iql
+    networks:
+      - nosql-net
+
+  # Grafana для визуализации
+  grafana:
+    image: grafana/grafana:10.2.0
+    hostname: grafana
+    container_name: grafana
+    depends_on:
+      - influxdb
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana-provisioning:/etc/grafana/provisioning
+    networks:
+      - nosql-net
+
+  # Telegraf для сбора метрик (опционально)
+  telegraf:
+    image: telegraf:1.28
+    hostname: telegraf
+    container_name: telegraf
+    depends_on:
+      - influxdb
+    volumes:
+      - ./config/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    networks:
+      - nosql-net
+      - kafka-net  # Для чтения из Kafka
+
+volumes:
+  influxdb_data:
+  influxdb_config:
+  grafana_data:
+
+networks:
+  nosql-net:
+    driver: bridge
+  kafka-net:
+    external: true
+    name: kafka_kafka-net
