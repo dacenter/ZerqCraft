@@ -1,34 +1,31 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Telegram Userbot с ИИ автоответчиком
+Telegram Бот с ИИ - Виртуальный гид по Укеку
 API: http://api.onlysq.ru/ai/v2
 Модель: gemini-3-flash
 """
 
 import os
 import json
-import ssl
 import base64
 import asyncio
 import aiohttp
 import aiofiles
 from pathlib import Path
 from datetime import datetime
-from telethon import TelegramClient, events
-from telethon.tl.types import Message, MessageMediaPhoto, MessageMediaDocument
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import Message, ContentType
+from aiogram.enums import ChatAction
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # Конфигурация
-API_ID = int(os.getenv("API_ID", "0"))
-API_HASH = os.getenv("API_HASH", "")
-PHONE = os.getenv("PHONE", "")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 AI_API_URL = "http://api.onlysq.ru/ai/v2"
 AI_MODEL = "gemini-3-flash"
 DB_FILE = "database.json"
-SESSION_NAME = "userbot_session"
 KNOWLEDGE_FILE = "knowledge.txt"
 
 
@@ -42,21 +39,23 @@ def load_knowledge() -> str:
                 if content:
                     return f"""
 
-у тебя есть база знаний. если вопрос совпадает или похож - отвечай по этой базе:
+у тебя есть база знаний о городе Укек и проекте. отвечай на вопросы используя эту информацию:
 
 {content}
 
-если вопрос не из базы знаний - отвечай своими словами как обычно."""
+если вопрос не из базы знаний - отвечай своими словами как обычно, но в контексте темы Укека."""
         except Exception as e:
             print(f"Ошибка загрузки базы знаний: {e}")
     return ""
 
 
 # Системный промпт для ИИ
-SYSTEM_PROMPT = """ты обычный человек в телеграме. пиши с маленькой буквы, без лишних формальностей.
-отвечай коротко и по делу как живой человек в чате. не используй команды и не пиши как бот.
-если тебе прислали фото - опиши что видишь или прокомментируй.
-если тебе прислали голосовое - отвечай на его содержание.""" + load_knowledge()
+SYSTEM_PROMPT = """ты Серафим - виртуальный гид проекта "Укек", тебе 16 лет.
+пиши с маленькой буквы, дружелюбно и просто, как подросток в чате.
+ты знаешь всё о золотоордынском городе Укек и археологических раскопках.
+отвечай коротко и интересно, можешь шутить.
+если тебе прислали фото - прокомментируй его.
+если спрашивают что-то не по теме - мягко возвращай к теме Укека.""" + load_knowledge()
 
 
 class Database:
@@ -102,17 +101,14 @@ class Database:
 
         await self.save()
 
+    async def clear_history(self, chat_id: int):
+        chat_id = str(chat_id)
+        self.data["chats"][chat_id] = []
+        await self.save()
+
 
 class AIClient:
     """Клиент для работы с ИИ API"""
-
-    def __init__(self):
-        # Отключаем проверку SSL
-        self.ssl_context = ssl.create_default_context()
-        self.ssl_context.check_hostname = False
-        self.ssl_context.verify_mode = ssl.CERT_NONE
-
-        self.connector = aiohttp.TCPConnector(ssl=False)
 
     async def ask(self, messages: list, image_base64: str = None) -> str:
         """Отправить запрос к ИИ"""
@@ -127,7 +123,7 @@ class AIClient:
             payload["image"] = image_base64
 
         try:
-            async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
+            async with aiohttp.ClientSession() as session:
                 async with session.post(
                     AI_API_URL,
                     json=payload,
@@ -158,173 +154,165 @@ class AIClient:
                     else:
                         error_text = await resp.text()
                         print(f"AI API ошибка {resp.status}: {error_text}")
-                        return "не могу ответить сейчас"
+                        return "что-то пошло не так, попробуй ещё раз"
         except Exception as e:
             print(f"Ошибка запроса к AI: {e}")
-            return "что-то пошло не так, попробуй позже"
+            return "упс, что-то сломалось. попробуй позже"
 
 
-class UserBot:
-    """Telegram Userbot с ИИ"""
+# Инициализация
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher()
+db = Database(DB_FILE)
+ai = AIClient()
 
-    def __init__(self):
-        self.client = TelegramClient(SESSION_NAME, API_ID, API_HASH)
-        self.db = Database(DB_FILE)
-        self.ai = AIClient()
-        self.me = None
 
-    async def start(self):
-        """Запуск бота"""
-        await self.client.start(phone=PHONE)
-        self.me = await self.client.get_me()
-        print(f"Userbot запущен как: {self.me.first_name} (@{self.me.username})")
+@dp.message(F.text == "/start")
+async def cmd_start(message: Message):
+    """Команда /start"""
+    welcome = """привет! я Серафим, виртуальный гид проекта "Укек" 👋
 
-        # Регистрируем обработчики
-        self.client.add_event_handler(self.handle_message, events.NewMessage(incoming=True))
+расскажу тебе про золотоордынский город на берегу Волги, археологические раскопки и интересные находки.
 
-        print("Слушаю сообщения...")
-        await self.client.run_until_disconnected()
+можешь спрашивать что угодно про Укек, присылать фото или просто поболтать!
 
-    async def download_media_as_base64(self, message: Message) -> str:
-        """Скачать медиа и конвертировать в base64"""
-        try:
-            data = await self.client.download_media(message, bytes)
-            if data:
-                return base64.b64encode(data).decode("utf-8")
-        except Exception as e:
-            print(f"Ошибка скачивания медиа: {e}")
-        return None
+напиши /help чтобы узнать что я умею"""
 
-    async def handle_voice(self, message: Message) -> str:
-        """Обработка голосового сообщения"""
-        try:
-            # Скачиваем голосовое
-            voice_data = await self.client.download_media(message, bytes)
-            if voice_data:
-                voice_base64 = base64.b64encode(voice_data).decode("utf-8")
+    await message.answer(welcome)
+    await db.clear_history(message.chat.id)
 
-                # Отправляем на распознавание в ИИ
-                messages = [
-                    {"role": "system", "content": "расшифруй это голосовое сообщение и скажи что там говорят"},
-                    {"role": "user", "content": f"[голосовое сообщение: audio/ogg base64]"}
-                ]
 
-                # Пробуем отправить аудио на распознавание
-                payload = {
-                    "model": AI_MODEL,
-                    "messages": messages,
-                    "audio": voice_base64
-                }
+@dp.message(F.text == "/help")
+async def cmd_help(message: Message):
+    """Команда /help"""
+    help_text = """что я умею:
 
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(AI_API_URL, json=payload, ssl=False) as resp:
-                        if resp.status == 200:
-                            data = await resp.json()
-                            if isinstance(data, dict):
-                                return data.get("response") or data.get("text") or data.get("content", "голосовое сообщение")
+📜 отвечать на вопросы про город Укек
+🏛 рассказывать про археологические раскопки
+🖼 комментировать фото которые ты присылаешь
+💬 просто болтать
 
-                return "голосовое сообщение"
-        except Exception as e:
-            print(f"Ошибка обработки голосового: {e}")
-        return "голосовое сообщение"
+команды:
+/start - начать сначала
+/help - эта справка
+/clear - очистить историю чата"""
 
-    async def handle_message(self, event: events.NewMessage.Event):
-        """Обработка входящего сообщения"""
-        message = event.message
-        sender = await event.get_sender()
-        chat = await event.get_chat()
+    await message.answer(help_text)
 
-        # Пропускаем свои сообщения
-        if sender and sender.id == self.me.id:
-            return
 
-        # Пропускаем каналы и большие группы (опционально)
-        # if event.is_channel:
-        #     return
+@dp.message(F.text == "/clear")
+async def cmd_clear(message: Message):
+    """Команда /clear"""
+    await db.clear_history(message.chat.id)
+    await message.answer("история очищена, начинаем с чистого листа!")
 
-        chat_id = event.chat_id
-        user_content = ""
-        image_base64 = None
 
-        # Обработка разных типов сообщений
-        if message.voice or message.audio:
-            # Голосовое сообщение
-            user_content = await self.handle_voice(message)
-            user_content = f"[голосовое сообщение]: {user_content}"
+@dp.message(F.photo)
+async def handle_photo(message: Message):
+    """Обработка фото"""
+    await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
 
-        elif message.photo:
-            # Фото
-            image_base64 = await self.download_media_as_base64(message)
-            user_content = message.text or "[фото без подписи]"
-            if image_base64:
-                user_content = f"[пользователь отправил фото] {user_content}"
+    # Скачиваем фото
+    photo = message.photo[-1]  # Берём самое большое
+    file = await bot.get_file(photo.file_id)
+    file_data = await bot.download_file(file.file_path)
+    image_base64 = base64.b64encode(file_data.read()).decode("utf-8")
 
-        elif message.document:
-            # Документ/файл
-            doc = message.document
-            filename = ""
-            for attr in doc.attributes:
-                if hasattr(attr, "file_name"):
-                    filename = attr.file_name
-                    break
-            user_content = f"[файл: {filename}] {message.text or ''}"
+    caption = message.caption or "пользователь прислал фото"
+    user_content = f"[фото] {caption}"
 
-        elif message.sticker:
-            # Стикер
-            user_content = "[стикер]"
+    # Получаем историю и формируем запрос
+    history = db.get_history(message.chat.id)
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for msg in history:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": user_content})
 
-        elif message.text:
-            # Обычное текстовое сообщение
-            user_content = message.text
+    # Сохраняем и получаем ответ
+    await db.add_message(message.chat.id, "user", user_content)
+    response = await ai.ask(messages, image_base64)
+    await db.add_message(message.chat.id, "assistant", response)
 
-        else:
-            # Другое
-            user_content = "[медиа сообщение]"
+    await message.answer(response)
 
-        if not user_content.strip():
-            return
 
-        # Получаем историю чата
-        history = self.db.get_history(chat_id)
+@dp.message(F.voice)
+async def handle_voice(message: Message):
+    """Обработка голосовых"""
+    await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
 
-        # Формируем сообщения для ИИ
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    # Скачиваем голосовое
+    file = await bot.get_file(message.voice.file_id)
+    file_data = await bot.download_file(file.file_path)
+    voice_base64 = base64.b64encode(file_data.read()).decode("utf-8")
 
-        for msg in history:
-            messages.append({
-                "role": msg["role"],
-                "content": msg["content"]
-            })
+    # Пробуем распознать через AI
+    try:
+        payload = {
+            "model": AI_MODEL,
+            "messages": [{"role": "user", "content": "расшифруй голосовое сообщение"}],
+            "audio": voice_base64
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(AI_API_URL, json=payload, ssl=False) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    transcript = data.get("response") or data.get("text") or "голосовое сообщение"
+                else:
+                    transcript = "голосовое сообщение"
+    except:
+        transcript = "голосовое сообщение"
 
-        messages.append({"role": "user", "content": user_content})
+    user_content = f"[голосовое]: {transcript}"
 
-        # Сохраняем сообщение пользователя
-        await self.db.add_message(chat_id, "user", user_content)
+    # Получаем историю и формируем запрос
+    history = db.get_history(message.chat.id)
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for msg in history:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": user_content})
 
-        # Показываем "печатает..."
-        async with self.client.action(chat_id, "typing"):
-            # Получаем ответ от ИИ
-            response = await self.ai.ask(messages, image_base64)
+    await db.add_message(message.chat.id, "user", user_content)
+    response = await ai.ask(messages)
+    await db.add_message(message.chat.id, "assistant", response)
 
-        # Сохраняем ответ
-        await self.db.add_message(chat_id, "assistant", response)
+    await message.answer(response)
 
-        # Отправляем ответ
-        try:
-            await event.respond(response)
-            print(f"[{chat_id}] {user_content[:50]}... -> {response[:50]}...")
-        except Exception as e:
-            print(f"Ошибка отправки: {e}")
+
+@dp.message(F.text)
+async def handle_text(message: Message):
+    """Обработка текстовых сообщений"""
+    # Пропускаем команды
+    if message.text.startswith("/"):
+        return
+
+    await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
+
+    user_content = message.text
+
+    # Получаем историю и формируем запрос
+    history = db.get_history(message.chat.id)
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for msg in history:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+    messages.append({"role": "user", "content": user_content})
+
+    # Сохраняем и получаем ответ
+    await db.add_message(message.chat.id, "user", user_content)
+    response = await ai.ask(messages)
+    await db.add_message(message.chat.id, "assistant", response)
+
+    await message.answer(response)
 
 
 async def main():
-    if not API_ID or not API_HASH:
-        print("Ошибка: Установите API_ID и API_HASH в .env файле")
-        print("Получить можно тут: https://my.telegram.org/apps")
+    if not BOT_TOKEN:
+        print("Ошибка: Установите BOT_TOKEN в .env файле")
+        print("Получить токен: напиши @BotFather в Telegram")
         return
 
-    bot = UserBot()
-    await bot.start()
+    print("Бот запущен!")
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,6 @@
 # Environment
 .env
 
-# Session files
-*.session
-*.session-journal
-userbot_session*
-
 # Database
 database.json
 
