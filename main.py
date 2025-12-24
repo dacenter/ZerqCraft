@@ -29,12 +29,34 @@ AI_API_URL = "http://api.onlysq.ru/ai/v2"
 AI_MODEL = "gemini-3-flash"
 DB_FILE = "database.json"
 SESSION_NAME = "userbot_session"
+KNOWLEDGE_FILE = "knowledge.txt"
+
+
+def load_knowledge() -> str:
+    """Загрузить базу знаний из файла"""
+    knowledge_path = Path(KNOWLEDGE_FILE)
+    if knowledge_path.exists():
+        try:
+            with open(knowledge_path, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+                if content:
+                    return f"""
+
+у тебя есть база знаний. если вопрос совпадает или похож - отвечай по этой базе:
+
+{content}
+
+если вопрос не из базы знаний - отвечай своими словами как обычно."""
+        except Exception as e:
+            print(f"Ошибка загрузки базы знаний: {e}")
+    return ""
+
 
 # Системный промпт для ИИ
 SYSTEM_PROMPT = """ты обычный человек в телеграме. пиши с маленькой буквы, без лишних формальностей.
 отвечай коротко и по делу как живой человек в чате. не используй команды и не пиши как бот.
 если тебе прислали фото - опиши что видишь или прокомментируй.
-если тебе прислали голосовое - отвечай на его содержание."""
+если тебе прислали голосовое - отвечай на его содержание.""" + load_knowledge()
 
 
 class Database:
