@@ -1,0 +1,26 @@
+# Environment
+.env
+
+# Session files
+*.session
+*.session-journal
+userbot_session*
+
+# Database
+database.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
