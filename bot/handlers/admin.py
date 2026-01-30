@@ -4,7 +4,7 @@
 import io
 from datetime import datetime
 from aiogram import Router, F, Bot
-from aiogram.types import Message, CallbackQuery, BufferInputFile
+from aiogram.types import Message, CallbackQuery, InputFile
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -319,13 +319,11 @@ async def export_data(message: Message):
     csv_content = "\n".join(lines)
 
     # Отправляем файл
-    file = BufferInputFile(
-        csv_content.encode("utf-8-sig"),
-        filename=f"export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    )
+    file_bytes = io.BytesIO(csv_content.encode("utf-8-sig"))
+    file_bytes.name = f"export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
     await message.answer_document(
-        file,
+        InputFile(file_bytes),
         caption="📤 Экспорт заявок",
         reply_markup=Keyboards.admin_main_menu()
     )
